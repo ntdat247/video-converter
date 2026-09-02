@@ -1220,6 +1220,12 @@ def api_events():
     return Response(event_stream(), mimetype="text/event-stream")
 
 
+def is_port_in_use(host: str, port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((host, port)) == 0
+
+
 def run_gui(host: str = "127.0.0.1", port: int = 5050, auto_open: bool = True):
     ready, msg = check_dependencies()
     if not ready:
@@ -1227,11 +1233,32 @@ def run_gui(host: str = "127.0.0.1", port: int = 5050, auto_open: bool = True):
         return
 
     url = f"http://{host}:{port}"
+
+    if is_port_in_use(host, port):
+        import urllib.request
+        try:
+            req = urllib.request.urlopen(f"{url}/api/status", timeout=1)
+            if req.status == 200:
+                print(f"[*] vid2 GUI đã đang chạy sẵn tại: {url}")
+                print(f"[*] Đang mở trình duyệt...")
+                if auto_open:
+                    webbrowser.open(url)
+                return
+        except Exception:
+            pass
+
     print(f"[*] vid2 GUI đang khởi chạy tại: {url}")
     if auto_open:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
 
-    app.run(host=host, port=port, debug=False, use_reloader=False)
+    try:
+        app.run(host=host, port=port, debug=False, use_reloader=False)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"[*] Cổng {port} đang bận, tự động chuyển sang cổng {port + 1}...")
+            run_gui(host=host, port=port + 1, auto_open=auto_open)
+        else:
+            raise
 
 
 if __name__ == "__main__":
