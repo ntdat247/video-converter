@@ -818,11 +818,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    let lastLogLength = -1;
+    let lastLogSignature = "";
     function renderLogs(logs) {
       if (!logs) return;
-      if (logs.length === lastLogLength) return;
-      lastLogLength = logs.length;
+      const lastItem = logs.length > 0 ? logs[logs.length - 1] : null;
+      const signature = `${logs.length}_${lastItem ? lastItem.time + '_' + lastItem.msg : ''}`;
+      if (signature === lastLogSignature) return;
+      lastLogSignature = signature;
 
       const body = document.getElementById('terminalBody');
       const autoScroll = document.getElementById('autoScrollLog').checked;
@@ -857,7 +859,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function clearLogs() {
       document.getElementById('terminalBody').innerHTML = '<div style="color: #8b949e;">[Đã xóa log màn hình]</div>';
-      lastLogLength = 0;
+      lastLogSignature = "";
     }
 
     async function shutdownServer() {
