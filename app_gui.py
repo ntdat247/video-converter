@@ -889,6 +889,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }, 2000);
     }
 
+    // Hủy bỏ hẹn giờ tắt server nếu người dùng chỉ vừa F5 tải lại trang
+    fetch('/api/cancel-shutdown', { method: 'POST' }).catch(() => {});
+
+    // Khi người dùng bấm tắt tab hoặc tắt cửa sổ trình duyệt:
+    // Trình duyệt sẽ hiện popup xác nhận chuẩn của hệ thống:
+    // "Bạn có chắc muốn rời khỏi trang web? Các thay đổi có thể không được lưu."
+    window.addEventListener('beforeunload', function (e) {
+      e.preventDefault();
+      e.returnValue = 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid2 không?';
+      return 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid2 không?';
+    });
+
+    // Khi người dùng bấm "Rời khỏi / Leave" để xác nhận tắt tab:
+    window.addEventListener('pagehide', function () {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/tab-closed');
+      } else {
+        fetch('/api/tab-closed', { method: 'POST', keepalive: true }).catch(() => {});
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
       initSSE();
     });
@@ -1122,6 +1143,46 @@ def api_shutdown():
 
     threading.Thread(target=delayed_exit, daemon=True).start()
     return jsonify({"success": True, "message": "Server đã tắt và giải phóng 100% tài nguyên."})
+
+
+shutdown_timer: Optional[threading.Timer] = None
+shutdown_timer_lock = threading.Lock()
+
+
+def perform_tab_shutdown():
+    cancel_event.set()
+    with state_lock:
+        current_task["should_cancel"] = True
+        current_task["is_running"] = False
+    broadcast_state()
+    time.sleep(0.3)
+    os._exit(0)
+
+
+@app.route("/api/tab-closed", methods=["POST"])
+def api_tab_closed():
+    """Nhận tín hiệu khi người dùng xác nhận đóng tab trên trình duyệt."""
+    global shutdown_timer
+    with shutdown_timer_lock:
+        if shutdown_timer and shutdown_timer.is_alive():
+            shutdown_timer.cancel()
+        # Chờ 2.5s: nếu là F5 tải lại trang thì route cancel-shutdown sẽ hủy timer.
+        # Nếu là đóng tab thật sự, server sẽ tắt và giải phóng 100% RAM/CPU.
+        shutdown_timer = threading.Timer(2.5, perform_tab_shutdown)
+        shutdown_timer.daemon = True
+        shutdown_timer.start()
+    return jsonify({"success": True})
+
+
+@app.route("/api/cancel-shutdown", methods=["POST"])
+def api_cancel_shutdown():
+    """Hủy hẹn giờ tắt server nếu người dùng tải lại trang."""
+    global shutdown_timer
+    with shutdown_timer_lock:
+        if shutdown_timer and shutdown_timer.is_alive():
+            shutdown_timer.cancel()
+            shutdown_timer = None
+    return jsonify({"success": True})
 
 
 @app.route("/api/status")
