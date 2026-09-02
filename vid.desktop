@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=vid2 Video Converter
+Name=vid Video Converter
 Comment=Chuyển đổi video WebM, MP4, MOV chất lượng cao
-Exec=/home/dat/.local/bin/vid2-gui
+Exec=/home/dat/.local/bin/vid-gui
 Icon=video-x-generic
 Terminal=false
 Type=Application

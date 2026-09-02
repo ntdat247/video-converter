@@ -254,24 +254,24 @@ def main() -> None:
         epilog="""
 Ví dụ sử dụng:
   # Chuyển đổi WebM sang MP4 (mặc định):
-  vid2 video.webm
-  vid2 video.webm -o ket_qua.mp4
+  vid video.webm
+  vid video.webm -o ket_qua.mp4
 
   # Chuyển đổi MP4 sang WebM:
-  vid2 video.mp4
-  vid2 video.mp4 -t webm
+  vid video.mp4
+  vid video.mp4 -t webm
 
   # Chuyển đổi qua lại giữa MP4 và MOV:
-  vid2 video.mp4 -t mov
-  vid2 video.mov -t mp4
+  vid video.mp4 -t mov
+  vid video.mov -t mp4
 
   # Sao chép luồng trực tiếp không nén lại (cực nhanh <1s cho MP4 <-> MOV):
-  vid2 video.mp4 -t mov --copy
-  vid2 video.mov -t mp4 --copy
+  vid video.mp4 -t mov --copy
+  vid video.mov -t mp4 --copy
 
   # Chuyển đổi toàn bộ thư mục:
-  vid2 -d /path/to/folder -t mp4
-  vid2 -d /path/to/folder --from mov --to mp4
+  vid -d /path/to/folder -t mp4
+  vid -d /path/to/folder --from mov --to mp4
         """,
     )
 

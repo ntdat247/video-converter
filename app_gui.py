@@ -91,7 +91,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>vid2 - Video Converter</title>
+  <title>vid - Video Converter</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -428,7 +428,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <header>
       <div>
-        <h1>vid2 Video Converter <span class="tag">Ubuntu</span></h1>
+        <h1>vid Video Converter <span class="tag">Ubuntu</span></h1>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
           Chuyển đổi WebM ⇄ MP4 ⇄ MOV chất lượng cao &amp; Stream Copy siêu tốc
         </p>
@@ -578,7 +578,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <span class="terminal-dot dot-yellow"></span>
           <span class="terminal-dot dot-green"></span>
           <span style="font-family: 'Ubuntu Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #c9d1d9; margin-left: 6px;">
-            terminal@ubuntu: vid2 process logs
+            terminal@ubuntu: vid process logs
           </span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem;">
@@ -1013,7 +1013,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function shutdownServer() {
-      if (confirm("Bạn có chắc chắn muốn tắt hoàn toàn ứng dụng vid2 và giải phóng RAM & CPU?")) {
+      if (confirm("Bạn có chắc chắn muốn tắt hoàn toàn ứng dụng vid và giải phóng RAM & CPU?")) {
         try {
           await fetch('/api/shutdown', { method: 'POST' });
           document.body.innerHTML = `
@@ -1073,8 +1073,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     // "Bạn có chắc muốn rời khỏi trang web? Các thay đổi có thể không được lưu."
     window.addEventListener('beforeunload', function (e) {
       e.preventDefault();
-      e.returnValue = 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid2 không?';
-      return 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid2 không?';
+      e.returnValue = 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid không?';
+      return 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid không?';
     });
 
     // Khi người dùng bấm "Rời khỏi / Leave" để xác nhận tắt tab:
@@ -1498,7 +1498,7 @@ def run_gui(host: str = "127.0.0.1", port: int = 5050, auto_open: bool = True):
         try:
             req = urllib.request.urlopen(f"{url}/api/status", timeout=1)
             if req.status == 200:
-                print(f"[*] vid2 GUI đã đang chạy sẵn tại: {url}")
+                print(f"[*] vid GUI đã đang chạy sẵn tại: {url}")
                 print(f"[*] Đang mở trình duyệt...")
                 if auto_open:
                     webbrowser.open(url)
@@ -1506,7 +1506,7 @@ def run_gui(host: str = "127.0.0.1", port: int = 5050, auto_open: bool = True):
         except Exception:
             pass
 
-    print(f"[*] vid2 GUI đang khởi chạy tại: {url}")
+    print(f"[*] vid GUI đang khởi chạy tại: {url}")
     if auto_open:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
 

@@ -1,4 +1,4 @@
-# vid2 - Universal Video Converter (WebM ⇄ MP4 ⇄ MOV) on Ubuntu
+# vid - Universal Video Converter (WebM ⇄ MP4 ⇄ MOV) on Ubuntu
 
 [![Ubuntu](https://img.shields.io/badge/Platform-Ubuntu%20Linux-orange.svg)](https://ubuntu.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -47,13 +47,13 @@ You have three convenient ways to open the GUI:
 
 1. **From the Terminal:**
    ```bash
-   vid2-gui
+   vid-gui
    # or:
-   vid2 --gui
+   vid --gui
    ```
 2. **From Ubuntu App Launcher (GNOME):**
    - Press the **Super** key (Windows key).
-   - Search for **`vid2`** or **`Video Converter`** and hit Enter!
+   - Search for **`vid`** or **`Video Converter`** and hit Enter!
 3. **From Browser:**
    - Open [http://127.0.0.1:5050](http://127.0.0.1:5050) once the service is started.
 
@@ -64,56 +64,56 @@ You have three convenient ways to open the GUI:
 #### 1. Convert WebM ➜ MP4
 ```bash
 # Automatically creates an MP4 file with the same base name:
-vid2 "meeting_recording.webm"
+vid "meeting_recording.webm"
 
 # Specify a custom output file:
-vid2 "meeting_recording.webm" -o "output.mp4"
+vid "meeting_recording.webm" -o "output.mp4"
 ```
 
 #### 2. Convert MP4 ➜ WebM
 ```bash
 # Auto-detects target format based on extension:
-vid2 "screen_capture.mp4" -t webm
+vid "screen_capture.mp4" -t webm
 ```
 
 #### 3. Convert Between MP4 ⇄ MOV
 ```bash
 # High quality re-encode (CRF 14):
-vid2 "presentation.mp4" -t mov
+vid "presentation.mp4" -t mov
 
 # MOV to MP4:
-vid2 "sample.mov" -t mp4
+vid "sample.mov" -t mp4
 
 # ⚡ Stream Copy (Instant remux without re-encoding in ~0.5s):
-vid2 "input.mp4" -t mov --copy
-vid2 "input.mov" -t mp4 --copy
+vid "input.mp4" -t mov --copy
+vid "input.mov" -t mp4 --copy
 ```
 
 #### 4. Batch Processing Directories
 ```bash
 # Convert all supported videos in the current folder to MP4:
-vid2 -d . -t mp4
+vid -d . -t mp4
 
 # Convert all MP4 files in a folder to WebM:
-vid2 -d /path/to/source --from mp4 --to webm
+vid -d /path/to/source --from mp4 --to webm
 
 # Convert all MOV files to MP4 and output to another directory:
-vid2 -d /path/to/mov_dir --from mov --to mp4 -o /path/to/mp4_dir
+vid -d /path/to/mov_dir --from mov --to mp4 -o /path/to/mp4_dir
 
 # Recursively scan all subdirectories (-r):
-vid2 -d /path/to/parent_folder -t mp4 -r
+vid -d /path/to/parent_folder -t mp4 -r
 ```
 
 #### 5. Useful Automation Flags
 ```bash
 # Auto-overwrite (-y) and delete source file after success (--delete-original):
-vid2 "recording.webm" -y --delete-original
+vid "recording.webm" -y --delete-original
 
 # Fast compression for lightweight drafts:
-vid2 "demo.mp4" -t webm -q 22 --preset fast
+vid "demo.mp4" -t webm -q 22 --preset fast
 
 # Run in background for long videos (2-4 hours):
-nohup vid2 -d . -t mp4 > convert.log 2>&1 &
+nohup vid -d . -t mp4 > convert.log 2>&1 &
 tail -f convert.log
 ```
 
@@ -188,13 +188,13 @@ Bạn có 3 cách rất thuận tiện để mở giao diện:
 
 1. **Từ terminal:**
    ```bash
-   vid2-gui
+   vid-gui
    # hoặc:
-   vid2 --gui
+   vid --gui
    ```
 2. **Từ danh sách ứng dụng Ubuntu (App Launcher):**
    - Nhấn phím **Super** (phím Windows) trên bàn phím.
-   - Gõ tìm kiếm: **`vid2`** hoặc **`Video Converter`** rồi nhấn Enter!
+   - Gõ tìm kiếm: **`vid`** hoặc **`Video Converter`** rồi nhấn Enter!
 3. **Từ trình duyệt:**
    - Truy cập [http://127.0.0.1:5050](http://127.0.0.1:5050) sau khi khởi động ứng dụng.
 
@@ -205,56 +205,56 @@ Bạn có 3 cách rất thuận tiện để mở giao diện:
 #### 1. Chuyển đổi WebM ➜ MP4
 ```bash
 # Mặc định tự động xuất file MP4 cùng tên:
-vid2 "video_training.webm"
+vid "video_training.webm"
 
 # Chỉ định tên file kết quả:
-vid2 "video_training.webm" -o "output.mp4"
+vid "video_training.webm" -o "output.mp4"
 ```
 
 #### 2. Chuyển đổi MP4 ➜ WebM
 ```bash
 # Tự động xuất sang file WebM theo đuôi mở rộng:
-vid2 "demo.mp4" -t webm
+vid "demo.mp4" -t webm
 ```
 
 #### 3. Chuyển đổi qua lại giữa MP4 ⇄ MOV
 ```bash
 # MP4 sang MOV (mã hóa chất lượng cao CRF 14):
-vid2 "presentation.mp4" -t mov
+vid "presentation.mp4" -t mov
 
 # MOV sang MP4:
-vid2 "presentation.mov" -t mp4
+vid "presentation.mov" -t mp4
 
 # ⚡ Chuyển đổi siêu tốc không nén lại (Stream Copy trong 0.5 giây):
-vid2 "video.mp4" -t mov --copy
-vid2 "video.mov" -t mp4 --copy
+vid "video.mp4" -t mov --copy
+vid "video.mov" -t mp4 --copy
 ```
 
 #### 4. Chuyển đổi hàng loạt trong thư mục
 ```bash
 # Chuyển đổi toàn bộ video trong thư mục hiện tại sang MP4:
-vid2 -d . -t mp4
+vid -d . -t mp4
 
 # Chuyển đổi tất cả file MP4 sang WebM:
-vid2 -d /path/to/folder --from mp4 --to webm
+vid -d /path/to/folder --from mp4 --to webm
 
 # Chuyển đổi tất cả file MOV sang MP4 và lưu sang thư mục khác:
-vid2 -d /path/to/mov_folder --from mov --to mp4 -o /path/to/mp4_folder
+vid -d /path/to/mov_folder --from mov --to mp4 -o /path/to/mp4_folder
 
 # Quét đệ quy tất cả các thư mục con bên trong (-r):
-vid2 -d /path/to/folder -t mp4 -r
+vid -d /path/to/folder -t mp4 -r
 ```
 
 #### 5. Tùy chọn tiện ích tự động hóa
 ```bash
 # Tự động ghi đè (-y) và xóa file gốc sau khi convert thành công (--delete-original):
-vid2 "video.webm" -y --delete-original
+vid "video.webm" -y --delete-original
 
 # Xuất nhanh file nhẹ hơn cho video nháp:
-vid2 "video.mp4" -t webm -q 22 --preset fast
+vid "video.mp4" -t webm -q 22 --preset fast
 
 # Chạy ngầm trong nền cho video dài (2-4 tiếng):
-nohup vid2 -d . -t mp4 > convert.log 2>&1 &
+nohup vid -d . -t mp4 > convert.log 2>&1 &
 tail -f convert.log
 ```
 
