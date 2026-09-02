@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 # Launcher cho vid GUI
-TARGET_FILE="${BASH_SOURCE[0]}"
-while [ -h "$TARGET_FILE" ]; do
-    TARGET_DIR="$(cd -P "$(dirname "$TARGET_FILE")" >/dev/null 2>&1 && pwd)"
-    TARGET_FILE="$(readlink "$TARGET_FILE")"
-    [[ $TARGET_FILE != /* ]] && TARGET_FILE="$TARGET_DIR/$TARGET_FILE"
-done
-SCRIPT_DIR="$(cd -P "$(dirname "$TARGET_FILE")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd -P "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" >/dev/null 2>&1 && pwd)"
 
 if [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
     PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"

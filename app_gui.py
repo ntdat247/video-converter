@@ -1,5 +1,5 @@
 """
-app_gui.py - Giao diện Web GUI hiện đại cho ứng dụng vid2
+app_gui.py - Giao diện Web GUI hiện đại cho ứng dụng video converter
 Cung cấp đầy đủ tính năng tương đương CLI: Đơn file, hàng loạt, tùy biến codec, realtime progress SSE.
 """
 
@@ -91,7 +91,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>vid - Video Converter</title>
+  <title>Video Converter</title>
   <style>
     :root {
       --bg: #0f172a;
