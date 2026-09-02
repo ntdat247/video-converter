@@ -249,7 +249,7 @@ def process_single_file(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Ứng dụng chuyển đổi video đa năng (WebM, MP4, MOV) chất lượng cao bằng Python & FFmpeg trên Ubuntu.",
+        description="Ứng dụng chuyển đổi video đa năng (WebM, MP4, MOV) chất lượng cao bằng Python & FFmpeg trên Linux, Windows & macOS.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ví dụ sử dụng:

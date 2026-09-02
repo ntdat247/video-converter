@@ -10,6 +10,7 @@ import os
 import queue
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import webbrowser
@@ -459,7 +460,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <header>
       <div>
-        <h1>Video Converter <span class="tag">Ubuntu</span></h1>
+        <h1>Video Converter <span class="tag" id="osTag">{{ os_name }}</span></h1>
         <p id="headerSubtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;" data-i18n="headerSubtitle">
           Chuyển đổi WebM ⇄ MP4 ⇄ MOV chất lượng cao &amp; Stream Copy siêu tốc
         </p>
@@ -612,8 +613,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <span class="terminal-dot dot-red"></span>
           <span class="terminal-dot dot-yellow"></span>
           <span class="terminal-dot dot-green"></span>
-          <span style="font-family: 'Ubuntu Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #c9d1d9; margin-left: 6px;">
-            terminal@ubuntu: vid process logs
+          <span id="terminalHostTitle" style="font-family: 'Ubuntu Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #c9d1d9; margin-left: 6px;">
+            terminal@{{ os_name_lower }}: vid process logs
           </span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem;">
@@ -1345,84 +1346,198 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 
+def get_os_info() -> Tuple[str, str]:
+    """Trả về (tên hiển thị OS, định danh chữ thường)."""
+    if sys.platform == "darwin":
+        return "macOS", "macos"
+    elif sys.platform == "win32":
+        return "Windows", "windows"
+    
+    distro = "Linux"
+    if os.path.exists("/etc/os-release"):
+        try:
+            with open("/etc/os-release", "r", encoding="utf-8") as f:
+                content = f.read()
+                if "Ubuntu" in content:
+                    distro = "Ubuntu"
+                elif "Debian" in content:
+                    distro = "Debian"
+                elif "Fedora" in content:
+                    distro = "Fedora"
+                elif "Arch" in content:
+                    distro = "Arch"
+        except Exception:
+            pass
+    return distro, distro.lower()
+
+
+def open_native_file_dialog() -> Tuple[Optional[str], Optional[str]]:
+    """Mở hộp thoại chọn file native chuẩn của macOS (osascript), Windows (PowerShell) hoặc Linux (zenity/kdialog)."""
+    if sys.platform == "darwin":
+        script = '''
+        try
+            set chosenFile to choose file with prompt "Select video file" of type {"public.movie", "public.video", "webm", "mp4", "mov", "mkv"}
+            return POSIX path of chosenFile
+        on error number -128
+            return ""
+        end try
+        '''
+        try:
+            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+            path = res.stdout.strip()
+            return (path if path else None), None
+        except Exception as e:
+            return None, f"Lỗi AppleScript: {e}"
+
+    if sys.platform == "win32":
+        ps_cmd = (
+            "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; "
+            "$f = New-Object System.Windows.Forms.OpenFileDialog; "
+            "$f.Filter = 'Video Files (*.webm;*.mp4;*.mov;*.mkv)|*.webm;*.mp4;*.mov;*.mkv|All Files (*.*)|*.*'; "
+            "$f.Title = 'Select Video File'; "
+            "if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.FileName }"
+        )
+        try:
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True, text=True)
+            path = res.stdout.strip()
+            return (path if path else None), None
+        except Exception as e:
+            return None, f"Lỗi PowerShell: {e}"
+
+    zenity = shutil.which("zenity")
+    if zenity:
+        title = "Chọn file video cần chuyển đổi"
+        cmd = [
+            zenity,
+            "--file-selection",
+            "--modal",
+            f"--title={title}",
+            "--file-filter=Video (*.webm *.mp4 *.mov *.mkv)|*.webm *.mp4 *.mov *.mkv",
+            "--file-filter=Tất cả file (*.*)|*.*",
+        ]
+        if shutil.which("wmctrl"):
+            threading.Thread(
+                target=lambda: (time.sleep(0.25), subprocess.run(["wmctrl", "-R", title], capture_output=True)),
+                daemon=True
+            ).start()
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                return res.stdout.strip() or None, None
+            elif res.returncode == 1:
+                return None, None
+            return None, res.stderr.strip()
+        except Exception as e:
+            return None, str(e)
+
+    kdialog = shutil.which("kdialog")
+    if kdialog:
+        try:
+            res = subprocess.run(
+                [kdialog, "--getopenfilename", ".", "*.webm *.mp4 *.mov *.mkv|Video Files"],
+                capture_output=True, text=True
+            )
+            if res.returncode == 0:
+                return res.stdout.strip() or None, None
+            return None, None
+        except Exception as e:
+            return None, str(e)
+
+    return None, "Hệ thống chưa cài đặt Zenity hoặc KDialog để mở hộp chọn file."
+
+
+def open_native_dir_dialog() -> Tuple[Optional[str], Optional[str]]:
+    """Mở hộp thoại chọn thư mục native trên macOS, Windows hoặc Linux."""
+    if sys.platform == "darwin":
+        script = '''
+        try
+            set chosenFolder to choose folder with prompt "Select videos folder"
+            return POSIX path of chosenFolder
+        on error number -128
+            return ""
+        end try
+        '''
+        try:
+            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+            path = res.stdout.strip()
+            return (path if path else None), None
+        except Exception as e:
+            return None, f"Lỗi AppleScript: {e}"
+
+    if sys.platform == "win32":
+        ps_cmd = (
+            "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; "
+            "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "
+            "$f.Description = 'Select Videos Folder'; "
+            "if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }"
+        )
+        try:
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True, text=True)
+            path = res.stdout.strip()
+            return (path if path else None), None
+        except Exception as e:
+            return None, f"Lỗi PowerShell: {e}"
+
+    zenity = shutil.which("zenity")
+    if zenity:
+        title = "Chọn thư mục video"
+        cmd = [
+            zenity,
+            "--file-selection",
+            "--directory",
+            "--modal",
+            f"--title={title}",
+        ]
+        if shutil.which("wmctrl"):
+            threading.Thread(
+                target=lambda: (time.sleep(0.25), subprocess.run(["wmctrl", "-R", title], capture_output=True)),
+                daemon=True
+            ).start()
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                return res.stdout.strip() or None, None
+            elif res.returncode == 1:
+                return None, None
+            return None, res.stderr.strip()
+        except Exception as e:
+            return None, str(e)
+
+    kdialog = shutil.which("kdialog")
+    if kdialog:
+        try:
+            res = subprocess.run([kdialog, "--getexistingdirectory", "."], capture_output=True, text=True)
+            if res.returncode == 0:
+                return res.stdout.strip() or None, None
+            return None, None
+        except Exception as e:
+            return None, str(e)
+
+    return None, "Hệ thống chưa cài đặt Zenity hoặc KDialog để mở hộp chọn thư mục."
+
+
 @app.route("/")
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    os_name, os_name_lower = get_os_info()
+    return render_template_string(HTML_TEMPLATE, os_name=os_name, os_name_lower=os_name_lower)
 
 
 @app.route("/api/browse-file", methods=["POST"])
 def api_browse_file():
-    """Mở hộp thoại chọn file native GTK trên Ubuntu bằng Zenity và đưa lên trước."""
-    zenity = shutil.which("zenity")
-    if not zenity:
-        return jsonify({"path": None, "error": "Zenity chưa được cài đặt trên hệ thống."})
-    
-    title = "Chọn file video cần chuyển đổi"
-    cmd = [
-        "zenity",
-        "--file-selection",
-        "--modal",
-        f"--title={title}",
-        "--file-filter=Video (*.webm *.mp4 *.mov *.mkv)|*.webm *.mp4 *.mov *.mkv",
-        "--file-filter=Tất cả file (*.*)|*.*",
-    ]
-
-    # Đưa cửa sổ Zenity nổi lên trên cùng (Foreground)
-    def bring_to_front():
-        time.sleep(0.25)
-        if shutil.which("wmctrl"):
-            subprocess.run(["wmctrl", "-R", title], capture_output=True)
-
-    threading.Thread(target=bring_to_front, daemon=True).start()
-
-    try:
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            selected = res.stdout.strip()
-            return jsonify({"path": selected if selected else None})
-        elif res.returncode == 1:
-            # Người dùng bấm Hủy (Cancel)
-            return jsonify({"path": None})
-        else:
-            return jsonify({"path": None, "error": res.stderr.strip()})
-    except Exception as e:
-        return jsonify({"path": None, "error": str(e)})
+    """Mở hộp thoại chọn file native theo hệ điều hành hiện tại (macOS/Windows/Linux)."""
+    path, err = open_native_file_dialog()
+    if err:
+        return jsonify({"path": None, "error": err})
+    return jsonify({"path": path})
 
 
 @app.route("/api/browse-dir", methods=["POST"])
 def api_browse_dir():
-    """Mở hộp thoại chọn thư mục native GTK trên Ubuntu bằng Zenity và đưa lên trước."""
-    zenity = shutil.which("zenity")
-    if not zenity:
-        return jsonify({"path": None, "error": "Zenity chưa được cài đặt trên hệ thống."})
-
-    title = "Chọn thư mục video"
-    cmd = [
-        "zenity",
-        "--file-selection",
-        "--directory",
-        "--modal",
-        f"--title={title}",
-    ]
-
-    def bring_to_front():
-        time.sleep(0.25)
-        if shutil.which("wmctrl"):
-            subprocess.run(["wmctrl", "-R", title], capture_output=True)
-
-    threading.Thread(target=bring_to_front, daemon=True).start()
-
-    try:
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            selected = res.stdout.strip()
-            return jsonify({"path": selected if selected else None})
-        elif res.returncode == 1:
-            return jsonify({"path": None})
-        else:
-            return jsonify({"path": None, "error": res.stderr.strip()})
-    except Exception as e:
-        return jsonify({"path": None, "error": str(e)})
+    """Mở hộp thoại chọn thư mục native theo hệ điều hành hiện tại (macOS/Windows/Linux)."""
+    path, err = open_native_dir_dialog()
+    if err:
+        return jsonify({"path": None, "error": err})
+    return jsonify({"path": path})
 
 
 @app.route("/api/media-info", methods=["POST"])

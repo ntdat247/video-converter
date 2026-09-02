@@ -41,33 +41,51 @@ A versatile, lightweight, and high-performance video converter designed for Ubun
 
 ---
 
-### 📥 Installation & Setup (One-Click)
+### 📥 Installation & Setup (Cross-Platform)
 
-On any Ubuntu / Linux machine, clone the repository and run the setup script:
+#### 🐧 Linux (Ubuntu / Debian / Fedora / Arch)
+Clone the repository and run the setup script:
 ```bash
 git clone https://github.com/ntdat247/video-converter.git
 cd video-converter
 ./install.sh
 ```
-This automatically sets up the Python virtual environment, installs dependencies (`ffmpeg`, `zenity`, `flask`), creates symlinks for `vid` & `vid-gui` in `~/.local/bin`, and registers the app icon in the GNOME Application Menu.
+*Automatically installs FFmpeg/Zenity, creates Python venv, configures symlinks (`vid`, `vid-gui`), and registers the app icon in the Application Launcher.*
+
+#### 🍎 macOS (Apple Silicon & Intel)
+Ensure [Homebrew](https://brew.sh) is installed, then run:
+```bash
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+./install.sh
+```
+*Automatically installs FFmpeg via Brew, creates Python venv, symlinks CLI tools, and builds a macOS Application bundle in `~/Applications/Video Converter.app` for Spotlight & Launchpad.*
+
+#### 🪟 Windows (Windows 10 / 11)
+Open PowerShell or Command Prompt as Administrator:
+```cmd
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+install.bat
+```
+*Tip: If you don't have FFmpeg installed yet, simply install it with Winget:* `winget install Gyan.FFmpeg`
+*The installer automatically configures `venv`, dependencies, and creates a **'Video Converter'** shortcut on your Desktop.*
 
 ---
 
-### 🚀 Launching the GUI
+### 🚀 Launching the Application
 
-You have three convenient ways to open the GUI:
+1. **Desktop Shortcuts & App Launchers:**
+   - **Linux:** Press **Super** (Windows key) ➜ search for **`Video Converter`** or **`vid`**.
+   - **macOS:** Open Spotlight (**Cmd + Space**) ➜ type **`Video Converter`**.
+   - **Windows:** Double-click the **`Video Converter`** shortcut on your Desktop or run `vid-gui.bat`.
 
-1. **From the Terminal:**
-   ```bash
-   vid-gui
-   # or:
-   vid --gui
-   ```
-2. **From Ubuntu App Launcher (GNOME):**
-   - Press the **Super** key (Windows key).
-   - Search for **`vid`** or **`Video Converter`** and hit Enter!
-3. **From Browser:**
-   - Open [http://127.0.0.1:5050](http://127.0.0.1:5050) once the service is started.
+2. **From Terminal / Command Line:**
+   - **Linux & macOS:** `vid-gui` (GUI) or `vid input.webm` (CLI)
+   - **Windows:** `vid-gui.bat` (GUI) or `vid.bat input.webm` (CLI)
+
+3. **From Web Browser:**
+   - Navigate to [http://127.0.0.1:5050](http://127.0.0.1:5050) once the GUI service is started.
 
 ---
 
@@ -194,33 +212,51 @@ All 9 automated test cases verify container parsing, stream copying, re-encoding
 
 ---
 
-### 📥 Cài đặt nhanh trên máy mới (1 Lệnh duy nhất)
+### 📥 Cài đặt nhanh đa nền tảng (Cross-Platform)
 
-Khi clone mã nguồn về bất kỳ máy Ubuntu nào khác, bạn chỉ cần chạy script cài đặt tự động:
+#### 🐧 Linux (Ubuntu / Debian / Fedora / Arch)
+Clone repository và chạy script cài đặt tự động:
 ```bash
 git clone https://github.com/ntdat247/video-converter.git
 cd video-converter
 ./install.sh
 ```
-Lệnh này sẽ tự động: kiểm tra `ffmpeg`/`zenity`, tạo môi trường ảo Python `venv`, cài đặt thư viện, gắn lệnh `vid` & `vid-gui` vào terminal (`~/.local/bin`), và đăng ký biểu tượng icon vào danh sách ứng dụng Ubuntu (App Launcher).
+*Tự động cài đặt FFmpeg/Zenity, tạo môi trường Python `venv`, cài thư viện, liên kết lệnh terminal `vid`/`vid-gui`, và đăng ký biểu tượng app trong Ubuntu App Launcher.*
+
+#### 🍎 macOS (Apple Silicon & Intel)
+Đảm bảo máy đã cài [Homebrew](https://brew.sh), sau đó chạy:
+```bash
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+./install.sh
+```
+*Tự động cài đặt FFmpeg qua Homebrew, tạo `venv`, tạo lệnh terminal, và đóng gói ứng dụng `Video Converter.app` trong `~/Applications` để tìm kiếm trên Spotlight & Launchpad.*
+
+#### 🪟 Windows (Windows 10 / 11)
+Mở Command Prompt hoặc PowerShell:
+```cmd
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+install.bat
+```
+*Mẹo: Nếu máy chưa có FFmpeg, chỉ cần mở PowerShell gõ:* `winget install Gyan.FFmpeg`
+*Script sẽ tự động tạo môi trường ảo Python `venv`, cài đặt thư viện và tạo biểu tượng phím tắt **'Video Converter'** ngay trên màn hình Desktop.*
 
 ---
 
-### 🚀 Khởi chạy Giao diện đồ họa (GUI)
+### 🚀 Khởi chạy ứng dụng
 
-Bạn có 3 cách rất thuận tiện để mở giao diện:
+1. **Phím tắt Desktop & Menu ứng dụng:**
+   - **Linux:** Nhấn phím **Super** (phím Windows) ➜ tìm **`Video Converter`** hoặc **`vid`**.
+   - **macOS:** Mở Spotlight (**Cmd + Space**) ➜ gõ **`Video Converter`**.
+   - **Windows:** Bấm đúp vào biểu tượng **`Video Converter`** trên Desktop hoặc chạy file `vid-gui.bat`.
 
-1. **Từ terminal:**
-   ```bash
-   vid-gui
-   # hoặc:
-   vid --gui
-   ```
-2. **Từ danh sách ứng dụng Ubuntu (App Launcher):**
-   - Nhấn phím **Super** (phím Windows) trên bàn phím.
-   - Gõ tìm kiếm: **`vid`** hoặc **`Video Converter`** rồi nhấn Enter!
-3. **Từ trình duyệt:**
-   - Truy cập [http://127.0.0.1:5050](http://127.0.0.1:5050) sau khi khởi động ứng dụng.
+2. **Từ Terminal / Dòng lệnh:**
+   - **Linux & macOS:** `vid-gui` (mở GUI) hoặc `vid video.webm` (CLI)
+   - **Windows:** `vid-gui.bat` (mở GUI) hoặc `vid.bat video.webm` (CLI)
+
+3. **Từ trình duyệt web:**
+   - Truy cập [http://127.0.0.1:5050](http://127.0.0.1:5050) sau khi khởi động app.
 
 ---
 

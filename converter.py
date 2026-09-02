@@ -65,42 +65,91 @@ active_process: Optional[subprocess.Popen] = None
 is_paused: bool = False
 
 
+def _suspend_process_windows(pid: int) -> bool:
+    try:
+        import ctypes
+        ntdll = getattr(ctypes.windll, "ntdll", None)
+        kernel32 = getattr(ctypes.windll, "kernel32", None)
+        if ntdll and kernel32:
+            PROCESS_ALL_ACCESS = 0x1F0FFF
+            handle = kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            if handle:
+                try:
+                    return ntdll.NtSuspendProcess(handle) == 0
+                finally:
+                    kernel32.CloseHandle(handle)
+    except Exception:
+        pass
+    return False
+
+
+def _resume_process_windows(pid: int) -> bool:
+    try:
+        import ctypes
+        ntdll = getattr(ctypes.windll, "ntdll", None)
+        kernel32 = getattr(ctypes.windll, "kernel32", None)
+        if ntdll and kernel32:
+            PROCESS_ALL_ACCESS = 0x1F0FFF
+            handle = kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            if handle:
+                try:
+                    return ntdll.NtResumeProcess(handle) == 0
+                finally:
+                    kernel32.CloseHandle(handle)
+    except Exception:
+        pass
+    return False
+
+
 def pause_conversion() -> bool:
-    """Tạm dừng tiến trình FFmpeg bằng tín hiệu SIGSTOP (giải phóng CPU về 0%)."""
+    """Tạm dừng tiến trình FFmpeg (giải phóng CPU về 0% trên Linux, macOS và Windows)."""
     global is_paused
     if active_process and active_process.poll() is None:
         try:
             import signal
-            os.kill(active_process.pid, signal.SIGSTOP)
-            is_paused = True
-            return True
+            if hasattr(signal, "SIGSTOP"):
+                os.kill(active_process.pid, signal.SIGSTOP)
+                is_paused = True
+                return True
+            elif sys.platform == "win32":
+                if _suspend_process_windows(active_process.pid):
+                    is_paused = True
+                    return True
         except Exception:
             pass
     return False
 
 
 def resume_conversion() -> bool:
-    """Tiếp tục tiến trình FFmpeg bằng tín hiệu SIGCONT."""
+    """Tiếp tục tiến trình FFmpeg."""
     global is_paused
     if active_process and active_process.poll() is None:
         try:
             import signal
-            os.kill(active_process.pid, signal.SIGCONT)
-            is_paused = False
-            return True
+            if hasattr(signal, "SIGCONT"):
+                os.kill(active_process.pid, signal.SIGCONT)
+                is_paused = False
+                return True
+            elif sys.platform == "win32":
+                if _resume_process_windows(active_process.pid):
+                    is_paused = False
+                    return True
         except Exception:
             pass
     return False
 
 
 def stop_conversion() -> bool:
-    """Dừng hoàn toàn tiến trình FFmpeg bằng SIGKILL."""
+    """Dừng hoàn toàn tiến trình FFmpeg."""
     global is_paused
     if active_process and active_process.poll() is None:
         try:
             import signal
             if is_paused:
-                os.kill(active_process.pid, signal.SIGCONT)
+                if hasattr(signal, "SIGCONT"):
+                    os.kill(active_process.pid, signal.SIGCONT)
+                elif sys.platform == "win32":
+                    _resume_process_windows(active_process.pid)
             active_process.kill()
             active_process.wait()
             is_paused = False
