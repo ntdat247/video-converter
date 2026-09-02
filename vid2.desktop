@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=vid2 Video Converter
+Comment=Chuyển đổi video WebM, MP4, MOV chất lượng cao
+Exec=/home/dat/.local/bin/vid2-gui
+Icon=video-x-generic
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;AudioVideoEditing;
+Keywords=video;convert;webm;mp4;mov;transcode;
