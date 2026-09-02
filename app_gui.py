@@ -1268,6 +1268,9 @@ def background_worker(payload: Dict[str, Any]):
                 log_callback=add_log,
             )
 
+            if current_task["should_cancel"]:
+                break
+
             if delete_original and res.success:
                 try:
                     file_path.unlink()
@@ -1275,22 +1278,30 @@ def background_worker(payload: Dict[str, Any]):
                     pass
 
             with state_lock:
-                current_task["history"].insert(0, {
-                    "input": file_path.name,
-                    "output": res.output_path.name if res.success else None,
-                    "size": format_size(res.output_size_bytes) if res.success else None,
-                    "elapsed": res.elapsed_time,
-                    "success": res.success,
-                    "error": res.error_message,
-                })
+                if not current_task["should_cancel"]:
+                    current_task["history"].insert(0, {
+                        "input": file_path.name,
+                        "output": res.output_path.name if res.success else None,
+                        "size": format_size(res.output_size_bytes) if res.success else None,
+                        "elapsed": res.elapsed_time,
+                        "success": res.success,
+                        "error": res.error_message,
+                    })
             broadcast_state()
 
+        is_cancelled = False
         with state_lock:
             if not current_task["should_cancel"]:
                 current_task["status"] = "completed"
                 current_task["percentage"] = 100.0
+            else:
+                is_cancelled = True
+                current_task["status"] = "cancelled"
 
-        add_log("INFO", "✔ Đã hoàn tất 100% tất cả các file cần chuyển đổi.")
+        if not is_cancelled:
+            add_log("INFO", "✔ Đã hoàn tất 100% tất cả các file cần chuyển đổi.")
+        else:
+            add_log("WARN", "⏹ Đã dừng lại và hủy tác vụ theo yêu cầu của bạn.")
 
     except Exception as e:
         with state_lock:

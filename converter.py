@@ -568,6 +568,23 @@ def convert_file(
                     out_path.unlink()
                 except OSError:
                     pass
+
+            is_cancelled = (
+                (cancel_event and hasattr(cancel_event, "is_set") and cancel_event.is_set())
+                or proc.returncode in (-9, 137, 255)
+            )
+
+            if is_cancelled:
+                if log_callback:
+                    log_callback("WARN", "⏹ Quá trình chuyển đổi đã bị dừng theo yêu cầu (đã dọn dẹp file tạm).")
+                return ConversionResult(
+                    success=False,
+                    input_path=in_path,
+                    output_path=out_path,
+                    elapsed_time=time.time() - start_time,
+                    error_message="Quá trình chuyển đổi đã bị dừng bởi người dùng",
+                )
+
             err_msg = f"FFmpeg gặp lỗi (code {proc.returncode}): {stderr_output.strip()[-500:]}"
             if log_callback:
                 log_callback("ERROR", err_msg)
