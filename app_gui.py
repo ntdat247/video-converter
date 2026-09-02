@@ -325,6 +325,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     th { color: var(--text-muted); font-weight: 600; }
     .badge-success { color: var(--success); font-weight: 600; }
     .badge-error { color: var(--danger); font-weight: 600; }
+    .badge-warning { color: #f59e0b; font-weight: 600; }
 
     /* Ubuntu Terminal Log Box */
     .terminal-card {
@@ -919,8 +920,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             document.getElementById('completionModal').style.display = 'flex';
           }
         } else if (state.status === 'cancelled') {
-          statusBadge.textContent = '⏹ Đã dừng lại';
-          statusBadge.style.color = 'var(--danger)';
+          statusBadge.textContent = '⏹ Đã dừng (Đã hủy)';
+          statusBadge.style.color = '#f59e0b';
         } else if (state.status === 'error') {
           statusBadge.textContent = '✘ Có lỗi xảy ra: ' + state.message;
           statusBadge.style.color = 'var(--danger)';
@@ -934,15 +935,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (state.history && state.history.length > 0) {
         historyCard.style.display = 'block';
         const tbody = document.getElementById('historyBody');
-        tbody.innerHTML = state.history.map(item => `
-          <tr>
-            <td style="font-weight: 500;">${item.input}</td>
-            <td style="color: var(--primary);">${item.output || '--'}</td>
-            <td>${item.size || '--'}</td>
-            <td>${item.elapsed ? item.elapsed + 's' : '--'}</td>
-            <td><span class="${item.success ? 'badge-success' : 'badge-error'}">${item.success ? 'Thành công' : 'Lỗi'}</span></td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = state.history.map(item => {
+          let statusBadgeHtml = '';
+          if (item.cancelled) {
+            statusBadgeHtml = '<span class="badge-warning">Đã hủy</span>';
+          } else if (item.success) {
+            statusBadgeHtml = '<span class="badge-success">Thành công</span>';
+          } else {
+            statusBadgeHtml = '<span class="badge-error">Lỗi</span>';
+          }
+          const elapsedText = item.elapsed ? (typeof item.elapsed === 'number' ? item.elapsed.toFixed(1) : item.elapsed) + 's' : '--';
+          return `
+            <tr>
+              <td style="font-weight: 500;">${item.input}</td>
+              <td style="color: var(--primary);">${item.output || '--'}</td>
+              <td>${item.size || '--'}</td>
+              <td>${elapsedText}</td>
+              <td>${statusBadgeHtml}</td>
+            </tr>
+          `;
+        }).join('');
       }
 
       // Cập nhật Ubuntu Terminal Logs
@@ -1268,6 +1280,20 @@ def background_worker(payload: Dict[str, Any]):
                 log_callback=add_log,
             )
 
+            cancelled_this_file = getattr(res, "cancelled", False) or current_task["should_cancel"]
+
+            with state_lock:
+                current_task["history"].insert(0, {
+                    "input": file_path.name,
+                    "output": res.output_path.name if res.success else None,
+                    "size": format_size(res.output_size_bytes) if res.success else None,
+                    "elapsed": round(res.elapsed_time, 1) if res.elapsed_time else 0.0,
+                    "success": res.success,
+                    "cancelled": cancelled_this_file,
+                    "error": res.error_message,
+                })
+            broadcast_state()
+
             if current_task["should_cancel"]:
                 break
 
@@ -1276,18 +1302,6 @@ def background_worker(payload: Dict[str, Any]):
                     file_path.unlink()
                 except OSError:
                     pass
-
-            with state_lock:
-                if not current_task["should_cancel"]:
-                    current_task["history"].insert(0, {
-                        "input": file_path.name,
-                        "output": res.output_path.name if res.success else None,
-                        "size": format_size(res.output_size_bytes) if res.success else None,
-                        "elapsed": res.elapsed_time,
-                        "success": res.success,
-                        "error": res.error_message,
-                    })
-            broadcast_state()
 
         is_cancelled = False
         with state_lock:

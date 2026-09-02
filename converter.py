@@ -45,6 +45,7 @@ class ConversionResult:
     elapsed_time: float
     error_message: Optional[str] = None
     output_size_bytes: int = 0
+    cancelled: bool = False
 
 
 def format_duration(seconds: float | None) -> str:
@@ -581,8 +582,9 @@ def convert_file(
                     success=False,
                     input_path=in_path,
                     output_path=out_path,
-                    elapsed_time=time.time() - start_time,
+                    elapsed_time=round(time.time() - start_time, 1),
                     error_message="Quá trình chuyển đổi đã bị dừng bởi người dùng",
+                    cancelled=True,
                 )
 
             err_msg = f"FFmpeg gặp lỗi (code {proc.returncode}): {stderr_output.strip()[-500:]}"
