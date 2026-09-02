@@ -851,7 +851,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         alert("Chưa có log để sao chép!");
         return;
       }
-      const text = logs.map(l => `${l.time} [${l.level}] ${l.msg}`).join('\n');
+      const text = logs.map(l => `${l.time} [${l.level}] ${l.msg}`).join(String.fromCharCode(10));
       navigator.clipboard.writeText(text).then(() => alert("Đã sao chép toàn bộ nhật ký vào clipboard!"));
     }
 
