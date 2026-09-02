@@ -56,7 +56,7 @@ fi
 mkdir -p "$APP_DIR"
 cat > "$APP_DIR/vid.desktop" << DESKTOPEOF
 [Desktop Entry]
-Name=vid - Video Converter
+Name=Video Converter
 Comment=Chuyển đổi video WebM, MP4, MOV chất lượng cao
 Exec=$BIN_DIR/vid-gui
 Icon=$REPO_DIR/assets/icon.png

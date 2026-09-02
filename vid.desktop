@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=vid - Video Converter
+Name=Video Converter
 Comment=Chuyển đổi video WebM, MP4, MOV chất lượng cao
 Exec=/home/dat/.local/bin/vid-gui
 Icon=/home/dat/Applications/video-converter/assets/icon.png

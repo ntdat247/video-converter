@@ -222,6 +222,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .btn-success { background: #10b981; color: white; }
     .btn-success:hover { background: #059669; }
 
+    .lang-selector {
+      display: inline-flex;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .lang-btn {
+      padding: 5px 11px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .lang-btn:hover {
+      color: var(--text);
+    }
+    .lang-btn.active {
+      background: #334155;
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -428,12 +459,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <header>
       <div>
-        <h1>vid Video Converter <span class="tag">Ubuntu</span></h1>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+        <h1>Video Converter <span class="tag">Ubuntu</span></h1>
+        <p id="headerSubtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;" data-i18n="headerSubtitle">
           Chuyển đổi WebM ⇄ MP4 ⇄ MOV chất lượng cao &amp; Stream Copy siêu tốc
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="lang-selector">
+          <button id="langVi" class="lang-btn active" onclick="setLanguage('vi')">🇻🇳 Tiếng Việt</button>
+          <button id="langEn" class="lang-btn" onclick="setLanguage('en')">🇬🇧 English</button>
+        </div>
         <span style="color: var(--text-muted); font-size: 0.85rem;">v2.0</span>
       </div>
     </header>
@@ -441,16 +476,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <!-- Source Selection -->
     <div class="card">
       <div class="tabs">
-        <button class="tab-btn active" id="tabSingle" onclick="setMode('single')">🎬 Chuyển đổi 1 File</button>
-        <button class="tab-btn" id="tabBatch" onclick="setMode('batch')">📁 Chuyển đổi Thư mục (Hàng loạt)</button>
+        <button class="tab-btn active" id="tabSingle" onclick="setMode('single')" data-i18n="tabSingle">🎬 Chuyển đổi 1 File</button>
+        <button class="tab-btn" id="tabBatch" onclick="setMode('batch')" data-i18n="tabBatch">📁 Chuyển đổi Thư mục (Hàng loạt)</button>
       </div>
 
       <!-- Single file input -->
       <div id="singleSection">
-        <label for="inputPath">Đường dẫn file video nguồn (.webm, .mp4, .mov, .mkv):</label>
+        <label for="inputPath" id="labelInputPath" data-i18n="labelInputPath">Đường dẫn file video nguồn (.webm, .mp4, .mov, .mkv):</label>
         <div class="input-group">
           <input type="text" id="inputPath" placeholder="/home/.../video.webm" oninput="onInputChanged()">
-          <button type="button" class="btn-secondary" onclick="browseFile(this)">Duyệt file...</button>
+          <button type="button" class="btn-secondary" id="browseFileBtn" onclick="browseFile(this)" data-i18n="browseFile">Duyệt file...</button>
         </div>
         <div id="mediaInfoBox" class="media-info-box">
           <div class="media-info-grid" id="mediaInfoGrid"></div>
@@ -459,60 +494,60 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       <!-- Batch folder input -->
       <div id="batchSection" style="display: none;">
-        <label for="inputDir">Thư mục chứa video nguồn:</label>
+        <label for="inputDir" id="labelInputDir" data-i18n="labelInputDir">Thư mục chứa video nguồn:</label>
         <div class="input-group">
           <input type="text" id="inputDir" placeholder="/home/.../videos_folder" oninput="onDirChanged()">
-          <button type="button" class="btn-secondary" onclick="browseDir('inputDir', this)">Duyệt thư mục...</button>
+          <button type="button" class="btn-secondary" id="browseInputDirBtn" onclick="browseDir('inputDir', this)" data-i18n="browseDir">Duyệt thư mục...</button>
         </div>
-        <label for="outputDir">Thư mục lưu kết quả (để trống = lưu cùng thư mục nguồn):</label>
+        <label for="outputDir" id="labelOutputDir" data-i18n="labelOutputDir">Thư mục lưu kết quả (để trống = lưu cùng thư mục nguồn):</label>
         <div class="input-group">
           <input type="text" id="outputDir" placeholder="Tùy chọn: thư mục xuất kết quả...">
-          <button type="button" class="btn-secondary" onclick="browseDir('outputDir', this)">Duyệt thư mục...</button>
+          <button type="button" class="btn-secondary" id="browseOutputDirBtn" onclick="browseDir('outputDir', this)" data-i18n="browseDir">Duyệt thư mục...</button>
         </div>
       </div>
     </div>
 
     <!-- Output & Quality Settings -->
     <div class="card">
-      <div class="card-title">⚙️ Cài đặt đầu ra &amp; Chất lượng</div>
+      <div class="card-title" id="settingsTitle" data-i18n="settingsTitle">⚙️ Cài đặt đầu ra &amp; Chất lượng</div>
       
       <div class="grid-2">
         <div class="form-group">
-          <label for="targetFormat">Định dạng đích (Target Format):</label>
+          <label for="targetFormat" id="labelTargetFormat" data-i18n="labelTargetFormat">Định dạng đích (Target Format):</label>
           <select id="targetFormat" onchange="onFormatChanged()">
-            <option value="mp4" selected>MP4 (Chuẩn H.264 + AAC, tương thích 100%)</option>
-            <option value="webm">WebM (VP9 + Opus, chuẩn web Google/Chrome)</option>
-            <option value="mov">MOV (QuickTime Apple / Video Editor)</option>
-            <option value="mkv">MKV (Matroska)</option>
+            <option value="mp4" data-i18n="optMp4" selected>MP4 (Chuẩn H.264 + AAC, tương thích 100%)</option>
+            <option value="webm" data-i18n="optWebm">WebM (VP9 + Opus, chuẩn web Google/Chrome)</option>
+            <option value="mov" data-i18n="optMov">MOV (QuickTime Apple / Video Editor)</option>
+            <option value="mkv" data-i18n="optMkv">MKV (Matroska)</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="preset">Tốc độ nén (Preset):</label>
+          <label for="preset" id="labelPreset" data-i18n="labelPreset">Tốc độ nén (Preset):</label>
           <select id="preset">
-            <option value="slow" selected>slow (Chất lượng cao nhất, tối ưu viền chữ)</option>
-            <option value="medium">medium (Cân bằng tiêu chuẩn)</option>
-            <option value="fast">fast (Nhanh hơn)</option>
-            <option value="ultrafast">ultrafast (Siêu tốc độ)</option>
+            <option value="slow" data-i18n="optPresetSlow" selected>slow (Chất lượng cao nhất, tối ưu viền chữ)</option>
+            <option value="medium" data-i18n="optPresetMedium">medium (Cân bằng tiêu chuẩn)</option>
+            <option value="fast" data-i18n="optPresetFast">fast (Nhanh hơn)</option>
+            <option value="ultrafast" data-i18n="optPresetUltrafast">ultrafast (Siêu tốc độ)</option>
           </select>
         </div>
       </div>
 
       <div class="grid-2">
         <div class="form-group">
-          <label for="crfRange">Độ nét / Chất lượng (CRF): <span id="crfValue" style="color: var(--primary); font-weight: bold;">14</span> (<span id="crfLabel">Visually Lossless / Cực nét</span>)</label>
+          <label for="crfRange"><span id="labelCrfText" data-i18n="labelCrfText">Độ nét / Chất lượng (CRF):</span> <span id="crfValue" style="color: var(--primary); font-weight: bold;">14</span> (<span id="crfLabel">Visually Lossless / Cực nét</span>)</label>
           <div class="range-wrap">
             <input type="range" id="crfRange" min="0" max="51" value="14" oninput="updateCRF(this.value)">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="audioBitrate">Chất lượng âm thanh (Audio Bitrate):</label>
+          <label for="audioBitrate" id="labelAudioBitrate" data-i18n="labelAudioBitrate">Chất lượng âm thanh (Audio Bitrate):</label>
           <select id="audioBitrate">
-            <option value="320k" selected>320 kbps (Cao cấp / Giọng nói trong trẻo)</option>
-            <option value="256k">256 kbps</option>
-            <option value="192k">192 kbps (Chuẩn phòng thu)</option>
-            <option value="128k">128 kbps (Tiêu chuẩn nhẹ)</option>
+            <option value="320k" data-i18n="optAudio320" selected>320 kbps (Cao cấp / Giọng nói trong trẻo)</option>
+            <option value="256k" data-i18n="optAudio256">256 kbps</option>
+            <option value="192k" data-i18n="optAudio192">192 kbps (Chuẩn phòng thu)</option>
+            <option value="128k" data-i18n="optAudio128">128 kbps (Tiêu chuẩn nhẹ)</option>
           </select>
         </div>
       </div>
@@ -520,19 +555,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="checkbox-group">
         <label class="checkbox-label" id="copyStreamsLabel">
           <input type="checkbox" id="copyStreams">
-          <span>⚡ <strong>Stream Copy (--copy):</strong> Chuyển đổi định dạng siêu tốc không nén lại (<1s cho MP4 ⇄ MOV)</span>
+          <span id="labelCopyStreams" data-i18n="labelCopyStreams">⚡ <strong>Stream Copy (--copy):</strong> Chuyển đổi định dạng siêu tốc không nén lại (&lt;1s cho MP4 ⇄ MOV)</span>
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="overwrite" checked>
-          <span>Ghi đè file nếu đã tồn tại (-y)</span>
+          <span id="labelOverwrite" data-i18n="labelOverwrite">Ghi đè file nếu đã tồn tại (-y)</span>
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="deleteOriginal">
-          <span>Xóa file gốc sau khi chuyển đổi thành công (--delete-original)</span>
+          <span id="labelDeleteOriginal" data-i18n="labelDeleteOriginal">Xóa file gốc sau khi chuyển đổi thành công (--delete-original)</span>
         </label>
         <label class="checkbox-label" id="recursiveLabel" style="display: none;">
           <input type="checkbox" id="recursive">
-          <span>Quét đệ quy tất cả thư mục con (-r)</span>
+          <span id="labelRecursive" data-i18n="labelRecursive">Quét đệ quy tất cả thư mục con (-r)</span>
         </label>
       </div>
     </div>
@@ -541,12 +576,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="card">
       <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn-primary" id="startBtn" onclick="startConvert()">▶ Bắt đầu chuyển đổi</button>
+          <button class="btn-primary" id="startBtn" onclick="startConvert()" data-i18n="startBtn">▶ Bắt đầu chuyển đổi</button>
           <div id="runningControls" style="display: none; gap: 10px; align-items: center;">
             <button class="btn-warning" id="pauseResumeBtn" onclick="togglePauseResume()">
               <span id="pauseResumeIcon">■</span> <span id="pauseResumeText">Tạm dừng</span>
             </button>
-            <button class="btn-danger" id="stopBtn" onclick="stopConvert()">
+            <button class="btn-danger" id="stopBtn" onclick="stopConvert()" data-i18n="stopBtn">
               ⏻ Dừng hoàn toàn
             </button>
           </div>
@@ -583,53 +618,272 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem;">
           <label style="display: flex; align-items: center; gap: 5px; color: #8b949e; cursor: pointer; margin: 0;">
-            <input type="checkbox" id="autoScrollLog" checked style="accent-color: var(--primary); width: 14px; height: 14px;"> Tự cuộn
+            <input type="checkbox" id="autoScrollLog" checked style="accent-color: var(--primary); width: 14px; height: 14px;"> <span id="labelAutoScroll" data-i18n="autoScroll">Tự cuộn</span>
           </label>
-          <button class="btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="copyLogs()">📋 Sao chép</button>
-          <button class="btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="clearLogs()">🧹 Xóa</button>
+          <button class="btn-secondary" id="copyLogsBtn" style="padding: 3px 8px; font-size: 0.75rem;" onclick="copyLogs()" data-i18n="copyLogs">📋 Sao chép</button>
+          <button class="btn-secondary" id="clearLogsBtn" style="padding: 3px 8px; font-size: 0.75rem;" onclick="clearLogs()" data-i18n="clearLogs">🧹 Xóa</button>
         </div>
       </div>
       <div class="terminal-body" id="terminalBody">
-        <div style="color: #8b949e;">[Sẵn sàng] Chờ lệnh chuyển đổi...</div>
+        <div style="color: #8b949e;" id="terminalInitialMsg" data-i18n="terminalReady">[Sẵn sàng] Chờ lệnh chuyển đổi...</div>
       </div>
     </div>
 
     <!-- History / Results Table -->
     <div class="card" id="historyCard" style="display: none;">
-      <div class="card-title">📋 Lịch sử / Báo cáo kết quả</div>
+      <div class="card-title" id="historyTitle" data-i18n="historyTitle">📋 Lịch sử / Báo cáo kết quả</div>
       <div style="overflow-x: auto;">
         <table id="historyTable">
           <thead>
             <tr>
-              <th>File nguồn</th>
-              <th>File kết quả</th>
-              <th>Dung lượng</th>
-              <th>Thời gian</th>
-              <th>Trạng thái</th>
+              <th id="thInput" data-i18n="thInput">File nguồn</th>
+              <th id="thOutput" data-i18n="thOutput">File kết quả</th>
+              <th id="thSize" data-i18n="thSize">Dung lượng</th>
+              <th id="thElapsed" data-i18n="thElapsed">Thời gian</th>
+              <th id="thStatus" data-i18n="thStatus">Trạng thái</th>
             </tr>
           </thead>
           <tbody id="historyBody"></tbody>
         </table>
-    </div>
-  </div>
-
-  <!-- Modal thông báo hoàn tất chuyển đổi -->
-  <div id="completionModal" class="modal-overlay" style="display: none;">
-    <div class="modal-card">
-      <div style="font-size: 3.5rem; margin-bottom: 8px;">🎉</div>
-      <h2 style="color: #10b981; font-size: 1.6rem; margin-bottom: 8px;">Chuyển đổi hoàn tất 100%!</h2>
-      <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 18px;">
-        File video đã được xử lý xong với chất lượng cao và sẵn sàng sử dụng.
-      </p>
-      <div id="completionDetails" style="background: #0f172a; padding: 14px; border-radius: 10px; text-align: left; font-size: 0.9rem; color: #cbd5e1; margin-bottom: 22px; border: 1px solid #334155; line-height: 1.6;">
       </div>
-      <div style="display: flex; justify-content: center; gap: 12px;">
-        <button type="button" class="btn-primary" style="padding: 10px 24px; font-size: 1rem;" onclick="closeCompletionModal()">✔ Tuyệt vời / Đóng</button>
+    </div>
+
+    <!-- Modal thông báo hoàn tất chuyển đổi -->
+    <div id="completionModal" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <div style="font-size: 3.5rem; margin-bottom: 8px;">🎉</div>
+        <h2 style="color: #10b981; font-size: 1.6rem; margin-bottom: 8px;" id="modalTitle" data-i18n="modalTitle">Chuyển đổi hoàn tất 100%!</h2>
+        <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 18px;" id="modalSubtitle" data-i18n="modalSubtitle">
+          File video đã được xử lý xong với chất lượng cao và sẵn sàng sử dụng.
+        </p>
+        <div id="completionDetails" style="background: #0f172a; padding: 14px; border-radius: 10px; text-align: left; font-size: 0.9rem; color: #cbd5e1; margin-bottom: 22px; border: 1px solid #334155; line-height: 1.6;">
+        </div>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button type="button" class="btn-primary" id="modalCloseBtn" style="padding: 10px 24px; font-size: 1rem;" onclick="closeCompletionModal()" data-i18n="modalCloseBtn">✔ Tuyệt vời / Đóng</button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+    const translations = {
+      vi: {
+        pageTitle: "Video Converter",
+        headerSubtitle: "Chuyển đổi WebM ⇄ MP4 ⇄ MOV chất lượng cao &amp; Stream Copy siêu tốc",
+        tabSingle: "🎬 Chuyển đổi 1 File",
+        tabBatch: "📁 Chuyển đổi Thư mục (Hàng loạt)",
+        labelInputPath: "Đường dẫn file video nguồn (.webm, .mp4, .mov, .mkv):",
+        browseFile: "Duyệt file...",
+        labelInputDir: "Thư mục chứa video nguồn:",
+        browseDir: "Duyệt thư mục...",
+        labelOutputDir: "Thư mục lưu kết quả (để trống = lưu cùng thư mục nguồn):",
+        settingsTitle: "⚙️ Cài đặt đầu ra &amp; Chất lượng",
+        labelTargetFormat: "Định dạng đích (Target Format):",
+        optMp4: "MP4 (Chuẩn H.264 + AAC, tương thích 100%)",
+        optWebm: "WebM (VP9 + Opus, chuẩn web Google/Chrome)",
+        optMov: "MOV (QuickTime Apple / Video Editor)",
+        optMkv: "MKV (Matroska)",
+        labelPreset: "Tốc độ nén (Preset):",
+        optPresetSlow: "slow (Chất lượng cao nhất, tối ưu viền chữ)",
+        optPresetMedium: "medium (Cân bằng tiêu chuẩn)",
+        optPresetFast: "fast (Nhanh hơn)",
+        optPresetUltrafast: "ultrafast (Siêu tốc độ)",
+        labelCrfText: "Độ nét / Chất lượng (CRF):",
+        labelAudioBitrate: "Chất lượng âm thanh (Audio Bitrate):",
+        optAudio320: "320 kbps (Cao cấp / Giọng nói trong trẻo)",
+        optAudio256: "256 kbps",
+        optAudio192: "192 kbps (Chuẩn phòng thu)",
+        optAudio128: "128 kbps (Tiêu chuẩn nhẹ)",
+        labelCopyStreams: "⚡ <strong>Stream Copy (--copy):</strong> Chuyển đổi định dạng siêu tốc không nén lại (&lt;1s cho MP4 ⇄ MOV)",
+        labelOverwrite: "Ghi đè file nếu đã tồn tại (-y)",
+        labelDeleteOriginal: "Xóa file gốc sau khi chuyển đổi thành công (--delete-original)",
+        labelRecursive: "Quét đệ quy tất cả thư mục con (-r)",
+        startBtn: "▶ Bắt đầu chuyển đổi",
+        stopBtn: "⏻ Dừng hoàn toàn",
+        pause: "Tạm dừng",
+        resume: "Tiếp tục (Resume)",
+        statusReady: "Sẵn sàng",
+        statusPaused: "⏸ Đang tạm dừng",
+        statusConverting: "Đang chuyển đổi...",
+        statusBatchProcessing: "Đang xử lý {current}/{total}...",
+        statusCompleted: "✔ Hoàn tất thành công!",
+        statusCancelled: "⏹ Đã dừng (Đã hủy)",
+        statusError: "✘ Có lỗi xảy ra: ",
+        autoScroll: "Tự cuộn",
+        copyLogs: "📋 Sao chép",
+        clearLogs: "🧹 Xóa",
+        terminalReady: "[Sẵn sàng] Chờ lệnh chuyển đổi...",
+        logsCleared: "[Đã xóa log màn hình]",
+        historyTitle: "📋 Lịch sử / Báo cáo kết quả",
+        thInput: "File nguồn",
+        thOutput: "File kết quả",
+        thSize: "Dung lượng",
+        thElapsed: "Thời gian",
+        thStatus: "Trạng thái",
+        badgeSuccess: "Thành công",
+        badgeCancelled: "Đã hủy",
+        badgeError: "Lỗi",
+        modalTitle: "Chuyển đổi hoàn tất 100%!",
+        modalSubtitle: "File video đã được xử lý xong với chất lượng cao và sẵn sàng sử dụng.",
+        modalCloseBtn: "✔ Tuyệt vời / Đóng",
+        modalOutputFile: "📁 File kết quả:",
+        modalSize: "📦 Dung lượng:",
+        modalDuration: "⏱️ Thời gian xử lý:",
+        mediaSize: "Dung lượng:",
+        mediaDuration: "Thời lượng:",
+        mediaResolution: "Độ phân giải:",
+        mediaVideoCodec: "Video Codec:",
+        mediaAudioCodec: "Audio Codec:",
+        mediaNone: "Không có",
+        crfLossless: "Lossless tuyệt đối",
+        crfVisuallyLossless: "Visually Lossless / Cực nét",
+        crfHighQuality: "Chất lượng cao cân bằng",
+        crfLight: "File nhẹ",
+        crfSmallest: "Rất nhẹ / Giảm chi tiết",
+        opening: "⏳ Đang mở...",
+        errSelectFile: "Vui lòng chọn file video cần chuyển đổi!",
+        errSelectDir: "Vui lòng chọn thư mục chứa video!",
+        confirmStop: "Bạn có chắc chắn muốn dừng hoàn toàn việc convert không? File đang chuyển đổi dở sẽ bị hủy.",
+        confirmShutdown: "Bạn có chắc chắn muốn tắt hoàn toàn ứng dụng và giải phóng RAM & CPU?",
+        confirmLeave: "Bạn có muốn thoát app và tắt toàn bộ tiến trình không?",
+        shutdownSuccessTitle: "Đã tắt ứng dụng thành công",
+        shutdownSuccessMsg: "Tiến trình Web Server và FFmpeg đã dừng lại.<br><strong style=\"color: #f8fafc;\">100% RAM và CPU đã được giải phóng cho hệ thống.</strong>",
+        shutdownCloseTabTip: "Bây giờ bạn có thể an tâm đóng tab trình duyệt này.",
+        copiedNotice: "Đã sao chép toàn bộ nhật ký vào clipboard!",
+        noLogsNotice: "Chưa có log để sao chép!"
+      },
+      en: {
+        pageTitle: "Video Converter",
+        headerSubtitle: "High-Quality WebM ⇄ MP4 ⇄ MOV Video Converter &amp; Ultra-Fast Stream Copy",
+        tabSingle: "🎬 Single File Convert",
+        tabBatch: "📁 Batch Folder Convert",
+        labelInputPath: "Source video file path (.webm, .mp4, .mov, .mkv):",
+        browseFile: "Browse file...",
+        labelInputDir: "Source videos folder:",
+        browseDir: "Browse folder...",
+        labelOutputDir: "Output folder (leave empty = same as source):",
+        settingsTitle: "⚙️ Output &amp; Quality Settings",
+        labelTargetFormat: "Target Format:",
+        optMp4: "MP4 (Standard H.264 + AAC, 100% Compatible)",
+        optWebm: "WebM (VP9 + Opus, Web &amp; Chrome Optimized)",
+        optMov: "MOV (QuickTime Apple / Video Editor)",
+        optMkv: "MKV (Matroska Container)",
+        labelPreset: "Encoding Preset:",
+        optPresetSlow: "slow (Best Quality, Crisp Text)",
+        optPresetMedium: "medium (Standard Balance)",
+        optPresetFast: "fast (Faster)",
+        optPresetUltrafast: "ultrafast (Ultra Fast)",
+        labelCrfText: "Video Quality (CRF):",
+        labelAudioBitrate: "Audio Quality (Bitrate):",
+        optAudio320: "320 kbps (Premium / Crystal Clear Voice)",
+        optAudio256: "256 kbps",
+        optAudio192: "192 kbps (Studio Standard)",
+        optAudio128: "128 kbps (Lightweight Standard)",
+        labelCopyStreams: "⚡ <strong>Stream Copy (--copy):</strong> Instant remux without re-encoding (&lt;1s for MP4 ⇄ MOV)",
+        labelOverwrite: "Overwrite file if already exists (-y)",
+        labelDeleteOriginal: "Delete original file after successful conversion (--delete-original)",
+        labelRecursive: "Recursively scan all subdirectories (-r)",
+        startBtn: "▶ Start Conversion",
+        stopBtn: "⏻ Stop Conversion",
+        pause: "Pause",
+        resume: "Resume",
+        statusReady: "Ready",
+        statusPaused: "⏸ Paused",
+        statusConverting: "Converting...",
+        statusBatchProcessing: "Processing {current}/{total}...",
+        statusCompleted: "✔ Completed Successfully!",
+        statusCancelled: "⏹ Stopped (Cancelled)",
+        statusError: "✘ Error occurred: ",
+        autoScroll: "Auto-scroll",
+        copyLogs: "📋 Copy",
+        clearLogs: "🧹 Clear",
+        terminalReady: "[Ready] Waiting for conversion command...",
+        logsCleared: "[Console logs cleared]",
+        historyTitle: "📋 History / Conversion Report",
+        thInput: "Source File",
+        thOutput: "Output File",
+        thSize: "Size",
+        thElapsed: "Duration",
+        thStatus: "Status",
+        badgeSuccess: "Success",
+        badgeCancelled: "Cancelled",
+        badgeError: "Error",
+        modalTitle: "Conversion Completed 100%!",
+        modalSubtitle: "Video file has been converted with high quality and is ready to use.",
+        modalCloseBtn: "✔ Great / Close",
+        modalOutputFile: "📁 Output file:",
+        modalSize: "📦 File size:",
+        modalDuration: "⏱️ Processing time:",
+        mediaSize: "Size:",
+        mediaDuration: "Duration:",
+        mediaResolution: "Resolution:",
+        mediaVideoCodec: "Video Codec:",
+        mediaAudioCodec: "Audio Codec:",
+        mediaNone: "None",
+        crfLossless: "Pure Lossless",
+        crfVisuallyLossless: "Visually Lossless / Ultra Crisp",
+        crfHighQuality: "High Quality Balanced",
+        crfLight: "Lightweight File",
+        crfSmallest: "Very Light / Lower Detail",
+        opening: "⏳ Opening...",
+        errSelectFile: "Please select a source video file to convert!",
+        errSelectDir: "Please select a folder containing videos!",
+        confirmStop: "Are you sure you want to completely stop the conversion? The in-progress file will be discarded.",
+        confirmShutdown: "Are you sure you want to shut down the application and release RAM &amp; CPU?",
+        confirmLeave: "Do you want to exit the app and stop all video conversion processes?",
+        shutdownSuccessTitle: "Application Shut Down Successfully",
+        shutdownSuccessMsg: "Web Server and FFmpeg processes have stopped.<br><strong style=\"color: #f8fafc;\">100% RAM and CPU have been freed for the system.</strong>",
+        shutdownCloseTabTip: "You can now safely close this browser tab.",
+        copiedNotice: "Copied all logs to clipboard!",
+        noLogsNotice: "No logs to copy!"
+      }
+    };
+
+    let currentLang = localStorage.getItem('vid_lang') || 'vi';
+
+    function t(key, vars = {}) {
+      let str = (translations[currentLang] && translations[currentLang][key]) || (translations['vi'] && translations['vi'][key]) || key;
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+      }
+      return str;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('vid_lang', lang);
+      document.documentElement.lang = lang;
+
+      const btnVi = document.getElementById('langVi');
+      const btnEn = document.getElementById('langEn');
+      if (btnVi) btnVi.classList.toggle('active', lang === 'vi');
+      if (btnEn) btnEn.classList.toggle('active', lang === 'en');
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang] && translations[lang][key]) {
+          el.innerHTML = translations[lang][key];
+        }
+      });
+
+      const outputDir = document.getElementById('outputDir');
+      if (outputDir) outputDir.placeholder = lang === 'en' ? 'Optional: output folder...' : 'Tùy chọn: thư mục xuất kết quả...';
+
+      const crfRange = document.getElementById('crfRange');
+      if (crfRange) updateCRF(crfRange.value);
+
+      if (window.lastState) {
+        updateUIWithState(window.lastState);
+      } else {
+        const statusBadge = document.getElementById('statusBadge');
+        if (statusBadge) statusBadge.textContent = t('statusReady');
+      }
+
+      if (window.lastMediaData) {
+        renderMediaInfo(window.lastMediaData);
+      }
+    }
+
     let currentMode = 'single';
 
     function setMode(mode) {
@@ -645,17 +899,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('crfValue').textContent = val;
       const lbl = document.getElementById('crfLabel');
       const n = parseInt(val);
-      if (n === 0) lbl.textContent = "Lossless tuyệt đối";
-      else if (n <= 16) lbl.textContent = "Visually Lossless / Cực nét";
-      else if (n <= 22) lbl.textContent = "Chất lượng cao cân bằng";
-      else if (n <= 28) lbl.textContent = "File nhẹ";
-      else lbl.textContent = "Rất nhẹ / Giảm chi tiết";
+      if (n === 0) lbl.textContent = t('crfLossless');
+      else if (n <= 16) lbl.textContent = t('crfVisuallyLossless');
+      else if (n <= 22) lbl.textContent = t('crfHighQuality');
+      else if (n <= 28) lbl.textContent = t('crfLight');
+      else lbl.textContent = t('crfSmallest');
     }
 
     async function browseFile(btn) {
-      const origText = btn ? btn.textContent : "Duyệt file...";
+      const origText = t('browseFile');
       if (btn) {
-        btn.textContent = "⏳ Đang mở...";
+        btn.textContent = t('opening');
         btn.disabled = true;
       }
       try {
@@ -665,10 +919,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           document.getElementById('inputPath').value = data.path;
           onInputChanged();
         } else if (data.error) {
-          alert("Không thể mở hộp chọn file: " + data.error);
+          alert("Error: " + data.error);
         }
       } catch (err) {
-        alert("Lỗi kết nối khi mở hộp chọn file: " + err);
+        alert("Error: " + err);
       } finally {
         if (btn) {
           btn.textContent = origText;
@@ -678,9 +932,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function browseDir(fieldId, btn) {
-      const origText = btn ? btn.textContent : "Duyệt thư mục...";
+      const origText = t('browseDir');
       if (btn) {
-        btn.textContent = "⏳ Đang mở...";
+        btn.textContent = t('opening');
         btn.disabled = true;
       }
       try {
@@ -689,10 +943,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (data.path) {
           document.getElementById(fieldId).value = data.path;
         } else if (data.error) {
-          alert("Không thể mở hộp chọn thư mục: " + data.error);
+          alert("Error: " + data.error);
         }
       } catch (err) {
-        alert("Lỗi kết nối khi mở hộp chọn thư mục: " + err);
+        alert("Error: " + err);
       } finally {
         if (btn) {
           btn.textContent = origText;
@@ -707,12 +961,24 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       inputTimeout = setTimeout(fetchMediaInfo, 300);
     }
 
+    function renderMediaInfo(data) {
+      if (!data) return;
+      const grid = document.getElementById('mediaInfoGrid');
+      grid.innerHTML = `
+        <div class="media-info-item"><span>${t('mediaSize')}</span> <span>${data.size}</span></div>
+        <div class="media-info-item"><span>${t('mediaDuration')}</span> <span>${data.duration_formatted} (${data.duration}s)</span></div>
+        <div class="media-info-item"><span>${t('mediaResolution')}</span> <span>${data.resolution}</span></div>
+        <div class="media-info-item"><span>${t('mediaVideoCodec')}</span> <span>${data.video_codec}</span></div>
+        <div class="media-info-item"><span>${t('mediaAudioCodec')}</span> <span>${data.audio_codec || t('mediaNone')}</span></div>
+      `;
+    }
+
     async function fetchMediaInfo() {
       const path = document.getElementById('inputPath').value.trim();
       const box = document.getElementById('mediaInfoBox');
-      const grid = document.getElementById('mediaInfoGrid');
       if (!path) {
         box.style.display = 'none';
+        window.lastMediaData = null;
         return;
       }
       try {
@@ -723,13 +989,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         });
         const data = await res.json();
         if (data.success) {
-          grid.innerHTML = `
-            <div class="media-info-item"><span>Dung lượng:</span> <span>${data.size}</span></div>
-            <div class="media-info-item"><span>Thời lượng:</span> <span>${data.duration_formatted} (${data.duration}s)</span></div>
-            <div class="media-info-item"><span>Độ phân giải:</span> <span>${data.resolution}</span></div>
-            <div class="media-info-item"><span>Video Codec:</span> <span>${data.video_codec}</span></div>
-            <div class="media-info-item"><span>Audio Codec:</span> <span>${data.audio_codec || 'Không có'}</span></div>
-          `;
+          window.lastMediaData = data;
+          renderMediaInfo(data);
           box.style.display = 'block';
 
           // Gợi ý định dạng đích thông minh
@@ -739,9 +1000,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           else if (ext === 'mp4') targetSelect.value = 'webm';
         } else {
           box.style.display = 'none';
+          window.lastMediaData = null;
         }
       } catch {
         box.style.display = 'none';
+        window.lastMediaData = null;
       }
     }
 
@@ -766,11 +1029,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       };
 
       if (mode === 'single' && !payload.input_path) {
-        alert("Vui lòng chọn file video cần chuyển đổi!");
+        alert(t('errSelectFile'));
         return;
       }
       if (mode === 'batch' && !payload.input_dir) {
-        alert("Vui lòng chọn thư mục chứa video!");
+        alert(t('errSelectDir'));
         return;
       }
 
@@ -782,10 +1045,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         });
         const data = await res.json();
         if (!data.success) {
-          alert("Lỗi: " + data.error);
+          alert(t('statusError') + data.error);
         }
       } catch (err) {
-        alert("Không thể kết nối đến server: " + err);
+        alert("Error: " + err);
       }
     }
 
@@ -795,36 +1058,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         try {
           await fetch('/api/resume', { method: 'POST' });
         } catch (err) {
-          alert("Lỗi khi tiếp tục: " + err);
+          alert("Error: " + err);
         }
       } else {
         try {
           await fetch('/api/pause', { method: 'POST' });
         } catch (err) {
-          alert("Lỗi khi tạm dừng: " + err);
+          alert("Error: " + err);
         }
       }
     }
 
     async function stopConvert() {
-      if (confirm("Bạn có chắc chắn muốn dừng hoàn toàn việc convert không? File đang chuyển đổi dở sẽ bị hủy.")) {
+      if (confirm(t('confirmStop'))) {
         try {
           await fetch('/api/stop', { method: 'POST' });
         } catch (err) {
-          alert("Lỗi khi dừng: " + err);
+          alert("Error: " + err);
         }
       }
-    }
-
-    // Kết nối SSE nhận tiến trình realtime
-    function initSSE() {
-      const evtSource = new EventSource('/api/events');
-      evtSource.onmessage = function(e) {
-        try {
-          const state = JSON.parse(e.data);
-          updateUIWithState(state);
-        } catch {}
-      };
     }
 
     function closeCompletionModal() {
@@ -856,6 +1108,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let hasShownCompletionModal = false;
 
     function updateUIWithState(state) {
+      window.lastState = state;
       const startBtn = document.getElementById('startBtn');
       const runningControls = document.getElementById('runningControls');
       const pauseResumeBtn = document.getElementById('pauseResumeBtn');
@@ -872,31 +1125,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         progressArea.style.display = 'block';
 
         if (state.is_paused) {
-          statusBadge.textContent = '⏸ Đang tạm dừng';
+          statusBadge.textContent = t('statusPaused');
           statusBadge.style.color = '#f59e0b';
           pauseResumeBtn.className = 'btn-success';
           pauseResumeIcon.textContent = '▶';
-          pauseResumeText.textContent = 'Tiếp tục (Resume)';
+          pauseResumeText.textContent = t('resume');
         } else {
-          statusBadge.textContent = state.total_files > 1 ? `Đang xử lý ${state.current_file_idx}/${state.total_files}...` : 'Đang chuyển đổi...';
+          statusBadge.textContent = state.total_files > 1 ? t('statusBatchProcessing', { current: state.current_file_idx, total: state.total_files }) : t('statusConverting');
           statusBadge.style.color = 'var(--primary)';
           pauseResumeBtn.className = 'btn-warning';
           pauseResumeIcon.textContent = '■';
-          pauseResumeText.textContent = 'Tạm dừng';
+          pauseResumeText.textContent = t('pause');
         }
 
         document.getElementById('progressFile').textContent = state.current_filename;
         document.getElementById('progressPercent').textContent = state.percentage.toFixed(1) + '%';
         document.getElementById('progressBar').style.width = state.percentage + '%';
         document.getElementById('progressTime').textContent = `${state.current_time_str} / ${state.total_time_str}`;
-        document.getElementById('progressSpeed').textContent = state.is_paused ? '0x (Tạm dừng)' : `${state.speed} (${state.fps.toFixed(0)} fps)`;
-        document.getElementById('progressEta').textContent = state.is_paused ? 'ETA: Tạm dừng' : (state.eta_str ? `ETA: ${state.eta_str}` : 'ETA: --:--');
+        document.getElementById('progressSpeed').textContent = state.is_paused ? `0x (${t('statusPaused')})` : `${state.speed} (${state.fps.toFixed(0)} fps)`;
+        document.getElementById('progressEta').textContent = state.is_paused ? `ETA: ${t('pause')}` : (state.eta_str ? `ETA: ${state.eta_str}` : 'ETA: --:--');
       } else {
         startBtn.style.display = 'inline-flex';
         runningControls.style.display = 'none';
 
         if (state.status === 'completed') {
-          statusBadge.textContent = '✔ Hoàn tất thành công!';
+          statusBadge.textContent = t('statusCompleted');
           statusBadge.style.color = 'var(--success)';
           document.getElementById('progressBar').style.width = '100%';
           document.getElementById('progressPercent').textContent = '100%';
@@ -907,26 +1160,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const lastItem = (state.history && state.history.length > 0) ? state.history[0] : null;
             if (lastItem) {
               document.getElementById('completionDetails').innerHTML = `
-                <div><strong>📁 File kết quả:</strong> <span style="color: #38bdf8; word-break: break-all;">${lastItem.output || state.current_filename}</span></div>
-                <div><strong>📦 Dung lượng:</strong> <span style="color: #10b981; font-weight: bold;">${lastItem.size || '--'}</span></div>
-                <div><strong>⏱️ Thời gian xử lý:</strong> <span>${lastItem.elapsed ? lastItem.elapsed.toFixed(1) + 's' : '--'}</span></div>
+                <div><strong>${t('modalOutputFile')}</strong> <span style="color: #38bdf8; word-break: break-all;">${lastItem.output || state.current_filename}</span></div>
+                <div><strong>${t('modalSize')}</strong> <span style="color: #10b981; font-weight: bold;">${lastItem.size || '--'}</span></div>
+                <div><strong>${t('modalDuration')}</strong> <span>${lastItem.elapsed ? (typeof lastItem.elapsed === 'number' ? lastItem.elapsed.toFixed(1) : lastItem.elapsed) + 's' : '--'}</span></div>
               `;
             } else {
               document.getElementById('completionDetails').innerHTML = `
-                <div><strong>📁 File:</strong> <span style="color: #38bdf8;">${state.current_filename}</span></div>
-                <div><strong>✔ Trạng thái:</strong> <span>Hoàn tất 100%</span></div>
+                <div><strong>${t('thInput')}:</strong> <span style="color: #38bdf8;">${state.current_filename}</span></div>
+                <div><strong>${t('thStatus')}:</strong> <span>100%</span></div>
               `;
             }
             document.getElementById('completionModal').style.display = 'flex';
           }
         } else if (state.status === 'cancelled') {
-          statusBadge.textContent = '⏹ Đã dừng (Đã hủy)';
+          statusBadge.textContent = t('statusCancelled');
           statusBadge.style.color = '#f59e0b';
         } else if (state.status === 'error') {
-          statusBadge.textContent = '✘ Có lỗi xảy ra: ' + state.message;
+          statusBadge.textContent = t('statusError') + state.message;
           statusBadge.style.color = 'var(--danger)';
         } else {
-          statusBadge.textContent = 'Sẵn sàng';
+          statusBadge.textContent = t('statusReady');
           statusBadge.style.color = 'var(--text-muted)';
         }
       }
@@ -938,11 +1191,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         tbody.innerHTML = state.history.map(item => {
           let statusBadgeHtml = '';
           if (item.cancelled) {
-            statusBadgeHtml = '<span class="badge-warning">Đã hủy</span>';
+            statusBadgeHtml = `<span class="badge-warning">${t('badgeCancelled')}</span>`;
           } else if (item.success) {
-            statusBadgeHtml = '<span class="badge-success">Thành công</span>';
+            statusBadgeHtml = `<span class="badge-success">${t('badgeSuccess')}</span>`;
           } else {
-            statusBadgeHtml = '<span class="badge-error">Lỗi</span>';
+            statusBadgeHtml = `<span class="badge-error">${t('badgeError')}</span>`;
           }
           const elapsedText = item.elapsed ? (typeof item.elapsed === 'number' ? item.elapsed.toFixed(1) : item.elapsed) + 's' : '--';
           return `
@@ -958,7 +1211,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       // Cập nhật Ubuntu Terminal Logs
-      window.lastState = state;
       if (state.logs) {
         renderLogs(state.logs);
       }
@@ -980,7 +1232,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const autoScroll = document.getElementById('autoScrollLog').checked;
 
       if (logs.length === 0) {
-        body.innerHTML = '<div style="color: #8b949e;">[Sẵn sàng] Chờ lệnh chuyển đổi...</div>';
+        body.innerHTML = `<div style="color: #8b949e;">${t('terminalReady')}</div>`;
         return;
       }
 
@@ -1000,35 +1252,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function copyLogs() {
       const logs = (window.lastState && window.lastState.logs) ? window.lastState.logs : [];
       if (logs.length === 0) {
-        alert("Chưa có log để sao chép!");
+        alert(t('noLogsNotice'));
         return;
       }
       const text = logs.map(l => `${l.time} [${l.level}] ${l.msg}`).join(String.fromCharCode(10));
-      navigator.clipboard.writeText(text).then(() => alert("Đã sao chép toàn bộ nhật ký vào clipboard!"));
+      navigator.clipboard.writeText(text).then(() => alert(t('copiedNotice')));
     }
 
     function clearLogs() {
-      document.getElementById('terminalBody').innerHTML = '<div style="color: #8b949e;">[Đã xóa log màn hình]</div>';
+      document.getElementById('terminalBody').innerHTML = `<div style="color: #8b949e;">${t('logsCleared')}</div>`;
       lastLogSignature = "";
     }
 
     async function shutdownServer() {
-      if (confirm("Bạn có chắc chắn muốn tắt hoàn toàn ứng dụng vid và giải phóng RAM & CPU?")) {
+      if (confirm(t('confirmShutdown'))) {
         try {
           await fetch('/api/shutdown', { method: 'POST' });
           document.body.innerHTML = `
             <div style="max-width: 520px; margin: 120px auto; text-align: center; color: #f8fafc; background: #1e293b; padding: 40px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
               <div style="font-size: 3.5rem; margin-bottom: 12px; color: #10b981;">✔</div>
-              <h2 style="color: #10b981; margin-bottom: 14px; font-size: 1.5rem;">Đã tắt ứng dụng thành công</h2>
+              <h2 style="color: #10b981; margin-bottom: 14px; font-size: 1.5rem;">${t('shutdownSuccessTitle')}</h2>
               <p style="color: #94a3b8; font-size: 1rem; line-height: 1.6;">
-                Tiến trình Web Server và FFmpeg đã dừng lại.<br>
-                <strong style="color: #f8fafc;">100% RAM và CPU đã được giải phóng cho hệ thống.</strong>
+                ${t('shutdownSuccessMsg')}
               </p>
-              <p style="margin-top: 24px; color: #64748b; font-size: 0.85rem;">Bây giờ bạn có thể an tâm đóng tab trình duyệt này.</p>
+              <p style="margin-top: 24px; color: #64748b; font-size: 0.85rem;">${t('shutdownCloseTabTip')}</p>
             </div>
           `;
         } catch (err) {
-          alert("Lỗi khi tắt server: " + err);
+          alert("Error: " + err);
         }
       }
     }
@@ -1069,12 +1320,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     fetch('/api/cancel-shutdown', { method: 'POST' }).catch(() => {});
 
     // Khi người dùng bấm tắt tab hoặc tắt cửa sổ trình duyệt:
-    // Trình duyệt sẽ hiện popup xác nhận chuẩn của hệ thống:
-    // "Bạn có chắc muốn rời khỏi trang web? Các thay đổi có thể không được lưu."
     window.addEventListener('beforeunload', function (e) {
       e.preventDefault();
-      e.returnValue = 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid không?';
-      return 'Bạn có muốn thoát app và tắt toàn bộ tiến trình vid không?';
+      e.returnValue = t('confirmLeave');
+      return t('confirmLeave');
     });
 
     // Khi người dùng bấm "Rời khỏi / Leave" để xác nhận tắt tab:
@@ -1087,6 +1336,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     });
 
     window.addEventListener('DOMContentLoaded', () => {
+      setLanguage(currentLang);
       initSSE();
     });
   </script>
