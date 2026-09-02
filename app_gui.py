@@ -417,7 +417,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <label for="inputPath">Đường dẫn file video nguồn (.webm, .mp4, .mov, .mkv):</label>
         <div class="input-group">
           <input type="text" id="inputPath" placeholder="/home/.../video.webm" oninput="onInputChanged()">
-          <button class="btn-secondary" onclick="browseFile()">Duyệt file...</button>
+          <button type="button" class="btn-secondary" onclick="browseFile(this)">Duyệt file...</button>
         </div>
         <div id="mediaInfoBox" class="media-info-box">
           <div class="media-info-grid" id="mediaInfoGrid"></div>
@@ -429,12 +429,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <label for="inputDir">Thư mục chứa video nguồn:</label>
         <div class="input-group">
           <input type="text" id="inputDir" placeholder="/home/.../videos_folder" oninput="onDirChanged()">
-          <button class="btn-secondary" onclick="browseDir('inputDir')">Duyệt thư mục...</button>
+          <button type="button" class="btn-secondary" onclick="browseDir('inputDir', this)">Duyệt thư mục...</button>
         </div>
         <label for="outputDir">Thư mục lưu kết quả (để trống = lưu cùng thư mục nguồn):</label>
         <div class="input-group">
           <input type="text" id="outputDir" placeholder="Tùy chọn: thư mục xuất kết quả...">
-          <button class="btn-secondary" onclick="browseDir('outputDir')">Duyệt thư mục...</button>
+          <button type="button" class="btn-secondary" onclick="browseDir('outputDir', this)">Duyệt thư mục...</button>
         </div>
       </div>
     </div>
@@ -597,28 +597,52 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       else lbl.textContent = "Rất nhẹ / Giảm chi tiết";
     }
 
-    async function browseFile() {
+    async function browseFile(btn) {
+      const origText = btn ? btn.textContent : "Duyệt file...";
+      if (btn) {
+        btn.textContent = "⏳ Đang mở...";
+        btn.disabled = true;
+      }
       try {
         const res = await fetch('/api/browse-file', { method: 'POST' });
         const data = await res.json();
         if (data.path) {
           document.getElementById('inputPath').value = data.path;
           onInputChanged();
+        } else if (data.error) {
+          alert("Không thể mở hộp chọn file: " + data.error);
         }
       } catch (err) {
-        alert("Lỗi khi mở hộp chọn file: " + err);
+        alert("Lỗi kết nối khi mở hộp chọn file: " + err);
+      } finally {
+        if (btn) {
+          btn.textContent = origText;
+          btn.disabled = false;
+        }
       }
     }
 
-    async function browseDir(fieldId) {
+    async function browseDir(fieldId, btn) {
+      const origText = btn ? btn.textContent : "Duyệt thư mục...";
+      if (btn) {
+        btn.textContent = "⏳ Đang mở...";
+        btn.disabled = true;
+      }
       try {
         const res = await fetch('/api/browse-dir', { method: 'POST' });
         const data = await res.json();
         if (data.path) {
           document.getElementById(fieldId).value = data.path;
+        } else if (data.error) {
+          alert("Không thể mở hộp chọn thư mục: " + data.error);
         }
       } catch (err) {
-        alert("Lỗi khi mở hộp chọn thư mục: " + err);
+        alert("Lỗi kết nối khi mở hộp chọn thư mục: " + err);
+      } finally {
+        if (btn) {
+          btn.textContent = origText;
+          btn.disabled = false;
+        }
       }
     }
 
@@ -926,43 +950,75 @@ def index():
 
 @app.route("/api/browse-file", methods=["POST"])
 def api_browse_file():
-    """Mở hộp thoại chọn file native GTK trên Ubuntu bằng Zenity."""
+    """Mở hộp thoại chọn file native GTK trên Ubuntu bằng Zenity và đưa lên trước."""
     zenity = shutil.which("zenity")
     if not zenity:
-        return jsonify({"path": None, "error": "Zenity không có sẵn"})
+        return jsonify({"path": None, "error": "Zenity chưa được cài đặt trên hệ thống."})
+    
+    title = "Chọn file video cần chuyển đổi"
+    cmd = [
+        "zenity",
+        "--file-selection",
+        "--modal",
+        f"--title={title}",
+        "--file-filter=Video (*.webm *.mp4 *.mov *.mkv)|*.webm *.mp4 *.mov *.mkv",
+        "--file-filter=Tất cả file (*.*)|*.*",
+    ]
+
+    # Đưa cửa sổ Zenity nổi lên trên cùng (Foreground)
+    def bring_to_front():
+        time.sleep(0.25)
+        if shutil.which("wmctrl"):
+            subprocess.run(["wmctrl", "-R", title], capture_output=True)
+
+    threading.Thread(target=bring_to_front, daemon=True).start()
+
     try:
-        cmd = [
-            "zenity",
-            "--file-selection",
-            "--title=Chọn file video cần chuyển đổi",
-            "--file-filter=Video (*.webm *.mp4 *.mov *.mkv)|*.webm *.mp4 *.mov *.mkv",
-            "--file-filter=Tất cả file (*.*)|*.*",
-        ]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            return jsonify({"path": res.stdout.strip()})
-        return jsonify({"path": None})
+            selected = res.stdout.strip()
+            return jsonify({"path": selected if selected else None})
+        elif res.returncode == 1:
+            # Người dùng bấm Hủy (Cancel)
+            return jsonify({"path": None})
+        else:
+            return jsonify({"path": None, "error": res.stderr.strip()})
     except Exception as e:
         return jsonify({"path": None, "error": str(e)})
 
 
 @app.route("/api/browse-dir", methods=["POST"])
 def api_browse_dir():
-    """Mở hộp thoại chọn thư mục native GTK trên Ubuntu bằng Zenity."""
+    """Mở hộp thoại chọn thư mục native GTK trên Ubuntu bằng Zenity và đưa lên trước."""
     zenity = shutil.which("zenity")
     if not zenity:
-        return jsonify({"path": None, "error": "Zenity không có sẵn"})
+        return jsonify({"path": None, "error": "Zenity chưa được cài đặt trên hệ thống."})
+
+    title = "Chọn thư mục video"
+    cmd = [
+        "zenity",
+        "--file-selection",
+        "--directory",
+        "--modal",
+        f"--title={title}",
+    ]
+
+    def bring_to_front():
+        time.sleep(0.25)
+        if shutil.which("wmctrl"):
+            subprocess.run(["wmctrl", "-R", title], capture_output=True)
+
+    threading.Thread(target=bring_to_front, daemon=True).start()
+
     try:
-        cmd = [
-            "zenity",
-            "--file-selection",
-            "--directory",
-            "--title=Chọn thư mục video",
-        ]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            return jsonify({"path": res.stdout.strip()})
-        return jsonify({"path": None})
+            selected = res.stdout.strip()
+            return jsonify({"path": selected if selected else None})
+        elif res.returncode == 1:
+            return jsonify({"path": None})
+        else:
+            return jsonify({"path": None, "error": res.stderr.strip()})
     except Exception as e:
         return jsonify({"path": None, "error": str(e)})
 
