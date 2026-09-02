@@ -41,6 +41,18 @@ A versatile, lightweight, and high-performance video converter designed for Ubun
 
 ---
 
+### 📥 Installation & Setup (One-Click)
+
+On any Ubuntu / Linux machine, clone the repository and run the setup script:
+```bash
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+./install.sh
+```
+This automatically sets up the Python virtual environment, installs dependencies (`ffmpeg`, `zenity`, `flask`), creates symlinks for `vid` & `vid-gui` in `~/.local/bin`, and registers the app icon in the GNOME Application Menu.
+
+---
+
 ### 🚀 Launching the GUI
 
 You have three convenient ways to open the GUI:
@@ -179,6 +191,18 @@ All 9 automated test cases verify container parsing, stream copying, re-encoding
   - Tự động bật Popup chúc mừng kèm âm thanh chuông nhẹ qua Web Audio API khi hoàn tất 100%.
 - 🌐 **Quản lý tiến trình & Cổng thông minh:**
   - Tự động phát hiện phiên bản đang chạy, tự đổi cổng khi trùng lặp và hỏi xác nhận khi đóng tab trình duyệt để giải phóng tài nguyên.
+
+---
+
+### 📥 Cài đặt nhanh trên máy mới (1 Lệnh duy nhất)
+
+Khi clone mã nguồn về bất kỳ máy Ubuntu nào khác, bạn chỉ cần chạy script cài đặt tự động:
+```bash
+git clone https://github.com/ntdat247/video-converter.git
+cd video-converter
+./install.sh
+```
+Lệnh này sẽ tự động: kiểm tra `ffmpeg`/`zenity`, tạo môi trường ảo Python `venv`, cài đặt thư viện, gắn lệnh `vid` & `vid-gui` vào terminal (`~/.local/bin`), và đăng ký biểu tượng icon vào danh sách ứng dụng Ubuntu (App Launcher).
 
 ---
 
