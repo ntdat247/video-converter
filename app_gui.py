@@ -747,7 +747,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         confirmShutdown: "Bạn có chắc chắn muốn tắt hoàn toàn ứng dụng và giải phóng RAM & CPU?",
         confirmLeave: "Bạn có muốn thoát app và tắt toàn bộ tiến trình không?",
         shutdownSuccessTitle: "Đã tắt ứng dụng thành công",
-        shutdownSuccessMsg: "Tiến trình Web Server và FFmpeg đã dừng lại.<br><strong style=\"color: #f8fafc;\">100% RAM và CPU đã được giải phóng cho hệ thống.</strong>",
+        shutdownSuccessMsg: "Tiến trình Web Server và FFmpeg đã dừng lại.<br><strong style='color: #f8fafc;'>100% RAM và CPU đã được giải phóng cho hệ thống.</strong>",
         shutdownCloseTabTip: "Bây giờ bạn có thể an tâm đóng tab trình duyệt này.",
         copiedNotice: "Đã sao chép toàn bộ nhật ký vào clipboard!",
         noLogsNotice: "Chưa có log để sao chép!"
@@ -832,7 +832,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         confirmShutdown: "Are you sure you want to shut down the application and release RAM &amp; CPU?",
         confirmLeave: "Do you want to exit the app and stop all video conversion processes?",
         shutdownSuccessTitle: "Application Shut Down Successfully",
-        shutdownSuccessMsg: "Web Server and FFmpeg processes have stopped.<br><strong style=\"color: #f8fafc;\">100% RAM and CPU have been freed for the system.</strong>",
+        shutdownSuccessMsg: "Web Server and FFmpeg processes have stopped.<br><strong style='color: #f8fafc;'>100% RAM and CPU have been freed for the system.</strong>",
         shutdownCloseTabTip: "You can now safely close this browser tab.",
         copiedNotice: "Copied all logs to clipboard!",
         noLogsNotice: "No logs to copy!"
