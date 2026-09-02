@@ -31,8 +31,8 @@ from converter import (
 
 app = Flask(__name__)
 
-# State quản lý tiến trình chuyển đổi toàn cục
-state_lock = threading.Lock()
+# State quản lý tiến trình chuyển đổi toàn cục (dùng RLock tránh deadlock lồng nhau)
+state_lock = threading.RLock()
 current_task = {
     "is_running": False,
     "should_cancel": False,
@@ -388,6 +388,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .log-debug { color: #8b949e; }
     .log-warn { color: #e3b341; font-weight: 600; }
     .log-error { color: #f85149; font-weight: 600; }
+
+    /* Modal thông báo hoàn thành */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid #38bdf8;
+      border-radius: 16px;
+      padding: 32px 28px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.2);
+      animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   </style>
 </head>
 <body>
@@ -570,6 +599,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </thead>
           <tbody id="historyBody"></tbody>
         </table>
+    </div>
+  </div>
+
+  <!-- Modal thông báo hoàn tất chuyển đổi -->
+  <div id="completionModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div style="font-size: 3.5rem; margin-bottom: 8px;">🎉</div>
+      <h2 style="color: #10b981; font-size: 1.6rem; margin-bottom: 8px;">Chuyển đổi hoàn tất 100%!</h2>
+      <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 18px;">
+        File video đã được xử lý xong với chất lượng cao và sẵn sàng sử dụng.
+      </p>
+      <div id="completionDetails" style="background: #0f172a; padding: 14px; border-radius: 10px; text-align: left; font-size: 0.9rem; color: #cbd5e1; margin-bottom: 22px; border: 1px solid #334155; line-height: 1.6;">
+      </div>
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button type="button" class="btn-primary" style="padding: 10px 24px; font-size: 1rem;" onclick="closeCompletionModal()">✔ Tuyệt vời / Đóng</button>
       </div>
     </div>
   </div>
@@ -751,6 +795,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       };
     }
 
+    function closeCompletionModal() {
+      document.getElementById('completionModal').style.display = 'none';
+    }
+
+    function playSuccessChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.12);
+        osc.frequency.setValueAtTime(783.99, now + 0.24);
+        osc.frequency.setValueAtTime(1046.50, now + 0.36);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      } catch {}
+    }
+
+    let hasShownCompletionModal = false;
+
     function updateUIWithState(state) {
       const startBtn = document.getElementById('startBtn');
       const cancelBtn = document.getElementById('cancelBtn');
@@ -759,6 +831,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const historyCard = document.getElementById('historyCard');
 
       if (state.is_running) {
+        hasShownCompletionModal = false;
         startBtn.style.display = 'none';
         cancelBtn.style.display = 'inline-flex';
         progressArea.style.display = 'block';
@@ -780,6 +853,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           statusBadge.style.color = 'var(--success)';
           document.getElementById('progressBar').style.width = '100%';
           document.getElementById('progressPercent').textContent = '100%';
+
+          if (!hasShownCompletionModal) {
+            hasShownCompletionModal = true;
+            playSuccessChime();
+            const lastItem = (state.history && state.history.length > 0) ? state.history[0] : null;
+            if (lastItem) {
+              document.getElementById('completionDetails').innerHTML = `
+                <div><strong>📁 File kết quả:</strong> <span style="color: #38bdf8; word-break: break-all;">${lastItem.output || state.current_filename}</span></div>
+                <div><strong>📦 Dung lượng:</strong> <span style="color: #10b981; font-weight: bold;">${lastItem.size || '--'}</span></div>
+                <div><strong>⏱️ Thời gian xử lý:</strong> <span>${lastItem.elapsed ? lastItem.elapsed.toFixed(1) + 's' : '--'}</span></div>
+              `;
+            } else {
+              document.getElementById('completionDetails').innerHTML = `
+                <div><strong>📁 File:</strong> <span style="color: #38bdf8;">${state.current_filename}</span></div>
+                <div><strong>✔ Trạng thái:</strong> <span>Hoàn tất 100%</span></div>
+              `;
+            }
+            document.getElementById('completionModal').style.display = 'flex';
+          }
         } else if (state.status === 'cancelled') {
           statusBadge.textContent = '⏹ Đã dừng lại';
           statusBadge.style.color = 'var(--danger)';
@@ -1151,13 +1243,14 @@ def background_worker(payload: Dict[str, Any]):
             if not current_task["should_cancel"]:
                 current_task["status"] = "completed"
                 current_task["percentage"] = 100.0
-                add_log("INFO", "✔ Đã hoàn tất 100% tất cả các file cần chuyển đổi.")
+
+        add_log("INFO", "✔ Đã hoàn tất 100% tất cả các file cần chuyển đổi.")
 
     except Exception as e:
-        add_log("ERROR", f"Tác vụ bị lỗi: {e}")
         with state_lock:
             current_task["status"] = "error"
             current_task["message"] = str(e)
+        add_log("ERROR", f"Tác vụ bị lỗi: {e}")
     finally:
         with state_lock:
             current_task["is_running"] = False
