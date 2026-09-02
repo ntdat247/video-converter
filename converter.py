@@ -60,6 +60,55 @@ def format_duration(seconds: float | None) -> str:
     return f"{mins:02d}:{secs:02d}"
 
 
+active_process: Optional[subprocess.Popen] = None
+is_paused: bool = False
+
+
+def pause_conversion() -> bool:
+    """Tạm dừng tiến trình FFmpeg bằng tín hiệu SIGSTOP (giải phóng CPU về 0%)."""
+    global is_paused
+    if active_process and active_process.poll() is None:
+        try:
+            import signal
+            os.kill(active_process.pid, signal.SIGSTOP)
+            is_paused = True
+            return True
+        except Exception:
+            pass
+    return False
+
+
+def resume_conversion() -> bool:
+    """Tiếp tục tiến trình FFmpeg bằng tín hiệu SIGCONT."""
+    global is_paused
+    if active_process and active_process.poll() is None:
+        try:
+            import signal
+            os.kill(active_process.pid, signal.SIGCONT)
+            is_paused = False
+            return True
+        except Exception:
+            pass
+    return False
+
+
+def stop_conversion() -> bool:
+    """Dừng hoàn toàn tiến trình FFmpeg bằng SIGKILL."""
+    global is_paused
+    if active_process and active_process.poll() is None:
+        try:
+            import signal
+            if is_paused:
+                os.kill(active_process.pid, signal.SIGCONT)
+            active_process.kill()
+            active_process.wait()
+            is_paused = False
+            return True
+        except Exception:
+            pass
+    return False
+
+
 def _parse_vint(data: bytes, offset: int) -> Tuple[Optional[int], int]:
     """Parse EBML Variable-length integer (VINT). Trả về (giá trị, số byte đọc được)."""
     if offset >= len(data):
@@ -390,6 +439,9 @@ def convert_file(
         bufsize=1,
         universal_newlines=True,
     )
+    global active_process, is_paused
+    active_process = proc
+    is_paused = False
 
     current_speed = "0x"
     current_fps = 0.0
@@ -560,3 +612,6 @@ def convert_file(
             elapsed_time=time.time() - start_time,
             error_message=str(e),
         )
+    finally:
+        active_process = None
+        is_paused = False

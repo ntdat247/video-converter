@@ -35,6 +35,7 @@ app = Flask(__name__)
 state_lock = threading.RLock()
 current_task = {
     "is_running": False,
+    "is_paused": False,
     "should_cancel": False,
     "total_files": 0,
     "current_file_idx": 0,
@@ -216,7 +217,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .btn-secondary:hover { background: #475569; }
     .btn-danger { background: var(--danger); color: white; }
     .btn-danger:hover { background: #dc2626; }
-    .btn-success { background: var(--success); color: #0f172a; }
+    .btn-warning { background: #f59e0b; color: #0f172a; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
 
     .grid-2 {
       display: grid;
@@ -430,7 +434,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
         <span style="color: var(--text-muted); font-size: 0.85rem;">v2.0</span>
-        <button class="btn-danger" style="padding: 6px 14px; font-size: 0.85rem;" onclick="shutdownServer()" title="Dừng hoàn toàn ứng dụng và giải phóng RAM/CPU">⏻ Thoát ứng dụng</button>
       </div>
     </header>
 
@@ -535,10 +538,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <!-- Actions & Live Progress -->
     <div class="card">
-      <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between;">
-        <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; align-items: center;">
           <button class="btn-primary" id="startBtn" onclick="startConvert()">▶ Bắt đầu chuyển đổi</button>
-          <button class="btn-danger" id="cancelBtn" onclick="cancelConvert()" style="display: none;">⏹ Dừng lại</button>
+          <div id="runningControls" style="display: none; gap: 10px; align-items: center;">
+            <button class="btn-warning" id="pauseResumeBtn" onclick="togglePauseResume()">
+              <span id="pauseResumeIcon">■</span> <span id="pauseResumeText">Tạm dừng</span>
+            </button>
+            <button class="btn-danger" id="stopBtn" onclick="stopConvert()">
+              ⏻ Dừng hoàn toàn
+            </button>
+          </div>
         </div>
         <div id="statusBadge" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Sẵn sàng</div>
       </div>
@@ -778,9 +788,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
-    async function cancelConvert() {
-      if (confirm("Bạn có chắc muốn dừng chuyển đổi?")) {
-        await fetch('/api/cancel', { method: 'POST' });
+    async function togglePauseResume() {
+      if (!window.lastState) return;
+      if (window.lastState.is_paused) {
+        try {
+          await fetch('/api/resume', { method: 'POST' });
+        } catch (err) {
+          alert("Lỗi khi tiếp tục: " + err);
+        }
+      } else {
+        try {
+          await fetch('/api/pause', { method: 'POST' });
+        } catch (err) {
+          alert("Lỗi khi tạm dừng: " + err);
+        }
+      }
+    }
+
+    async function stopConvert() {
+      if (confirm("Bạn có chắc chắn muốn dừng hoàn toàn việc convert không? File đang chuyển đổi dở sẽ bị hủy.")) {
+        try {
+          await fetch('/api/stop', { method: 'POST' });
+        } catch (err) {
+          alert("Lỗi khi dừng: " + err);
+        }
       }
     }
 
@@ -825,7 +856,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function updateUIWithState(state) {
       const startBtn = document.getElementById('startBtn');
-      const cancelBtn = document.getElementById('cancelBtn');
+      const runningControls = document.getElementById('runningControls');
+      const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+      const pauseResumeIcon = document.getElementById('pauseResumeIcon');
+      const pauseResumeText = document.getElementById('pauseResumeText');
       const progressArea = document.getElementById('progressArea');
       const statusBadge = document.getElementById('statusBadge');
       const historyCard = document.getElementById('historyCard');
@@ -833,20 +867,32 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (state.is_running) {
         hasShownCompletionModal = false;
         startBtn.style.display = 'none';
-        cancelBtn.style.display = 'inline-flex';
+        runningControls.style.display = 'inline-flex';
         progressArea.style.display = 'block';
-        statusBadge.textContent = state.total_files > 1 ? `Đang xử lý ${state.current_file_idx}/${state.total_files}...` : 'Đang chuyển đổi...';
-        statusBadge.style.color = 'var(--primary)';
+
+        if (state.is_paused) {
+          statusBadge.textContent = '⏸ Đang tạm dừng';
+          statusBadge.style.color = '#f59e0b';
+          pauseResumeBtn.className = 'btn-success';
+          pauseResumeIcon.textContent = '▶';
+          pauseResumeText.textContent = 'Tiếp tục (Resume)';
+        } else {
+          statusBadge.textContent = state.total_files > 1 ? `Đang xử lý ${state.current_file_idx}/${state.total_files}...` : 'Đang chuyển đổi...';
+          statusBadge.style.color = 'var(--primary)';
+          pauseResumeBtn.className = 'btn-warning';
+          pauseResumeIcon.textContent = '■';
+          pauseResumeText.textContent = 'Tạm dừng';
+        }
 
         document.getElementById('progressFile').textContent = state.current_filename;
         document.getElementById('progressPercent').textContent = state.percentage.toFixed(1) + '%';
         document.getElementById('progressBar').style.width = state.percentage + '%';
         document.getElementById('progressTime').textContent = `${state.current_time_str} / ${state.total_time_str}`;
-        document.getElementById('progressSpeed').textContent = `${state.speed} (${state.fps.toFixed(0)} fps)`;
-        document.getElementById('progressEta').textContent = state.eta_str ? `ETA: ${state.eta_str}` : 'ETA: --:--';
+        document.getElementById('progressSpeed').textContent = state.is_paused ? '0x (Tạm dừng)' : `${state.speed} (${state.fps.toFixed(0)} fps)`;
+        document.getElementById('progressEta').textContent = state.is_paused ? 'ETA: Tạm dừng' : (state.eta_str ? `ETA: ${state.eta_str}` : 'ETA: --:--');
       } else {
         startBtn.style.display = 'inline-flex';
-        cancelBtn.style.display = 'none';
+        runningControls.style.display = 'none';
 
         if (state.status === 'completed') {
           statusBadge.textContent = '✔ Hoàn tất thành công!';
@@ -1269,14 +1315,51 @@ def api_convert():
     return jsonify({"success": True})
 
 
-@app.route("/api/cancel", methods=["POST"])
-def api_cancel():
-    cancel_event.set()
+@app.route("/api/pause", methods=["POST"])
+def api_pause():
+    from converter import pause_conversion
+    success = pause_conversion()
     with state_lock:
         if current_task["is_running"]:
-            current_task["should_cancel"] = True
+            current_task["is_paused"] = True
+            current_task["status"] = "paused"
     broadcast_state()
+    add_log("WARN", "■ Đã tạm dừng chuyển đổi (CPU giải phóng về 0%).")
+    return jsonify({"success": success})
+
+
+@app.route("/api/resume", methods=["POST"])
+def api_resume():
+    from converter import resume_conversion
+    success = resume_conversion()
+    with state_lock:
+        if current_task["is_running"]:
+            current_task["is_paused"] = False
+            current_task["status"] = "running"
+    broadcast_state()
+    add_log("INFO", "▶ Đã tiếp tục chuyển đổi video.")
+    return jsonify({"success": success})
+
+
+@app.route("/api/stop", methods=["POST"])
+def api_stop():
+    """Dừng hoàn toàn quá trình chuyển đổi video."""
+    from converter import stop_conversion
+    cancel_event.set()
+    stop_conversion()
+    with state_lock:
+        current_task["should_cancel"] = True
+        current_task["is_paused"] = False
+        current_task["is_running"] = False
+        current_task["status"] = "cancelled"
+    broadcast_state()
+    add_log("WARN", "⏻ Đã dừng hoàn toàn việc chuyển đổi.")
     return jsonify({"success": True})
+
+
+@app.route("/api/cancel", methods=["POST"])
+def api_cancel():
+    return api_stop()
 
 
 @app.route("/api/shutdown", methods=["POST"])
